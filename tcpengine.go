@@ -386,6 +386,10 @@ func (engine *TcpEngin) initRpcHandler() {
 		}{}
 		engine.Handle(CmdRpcMethod, func(client ITcpClient, msg IMessage) {
 			data := msg.Body()
+			if len(data) < 2 {
+				client.SendMsg(NewRpcMessage(CmdRpcMethodError, msg.RpcSeq(), []byte("invalid rpc payload")))
+				return
+			}
 			methodLen := int(data[len(data)-1])
 			if methodLen <= 0 || methodLen > 128 || len(data)-1 < methodLen {
 				client.SendMsg(NewRpcMessage(CmdRpcMethodError, msg.RpcSeq(), []byte(fmt.Sprintf("invalid rpc method length %d, should between 0 and 128(not including 0 and 128)", methodLen))))
