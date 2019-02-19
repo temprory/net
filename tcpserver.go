@@ -22,8 +22,8 @@ type ITcpServer interface {
 	ITcpEngin
 	Start(addr string) error
 	Stop()
-	StopWithTimeout(to time.Duration)
-	Serve(addr string, args ...interface{})
+	StopWithTimeout(timeout time.Duration, onStopTimeout func())
+	Serve(addr string, stopTimeout time.Duration)
 	CurrLoad() int32
 	MaxLoad() int32
 	SetMaxConcurrent(maxLoad int32)
@@ -38,11 +38,13 @@ type TcpServer struct {
 	tag string
 	//running       bool
 	enableBroad   bool
+	addr          string
 	clientCount   uint64
 	currLoad      int32
 	maxLoad       int32
 	listener      *net.TCPListener
 	stopTimeout   time.Duration
+	onStopTimeout func()
 	onStopHandler func(server ITcpServer)
 }
 
@@ -51,6 +53,7 @@ func (server *TcpServer) addClient(client ITcpClient) {
 		server.Lock()
 		server.clients[client] = struct{}{}
 		server.Unlock()
+		client.OnClose(_client_rm_from_server, server.deleClient)
 	}
 	atomic.AddInt32(&server.currLoad, 1)
 }
@@ -102,82 +105,66 @@ func (server *TcpServer) stopClients() {
 	}
 }
 
-func (server *TcpServer) startListener(addr string) error {
+func (server *TcpServer) startListenerLoop() error {
+	logDebug("[TcpServer %s] Running on: \"%s\"", server.tag, server.addr)
 	defer logDebug("[TcpServer %s] Stopped.", server.tag)
+
 	var (
 		err       error
 		idx       uint64
 		conn      *net.TCPConn
-		tcpAddr   *net.TCPAddr
 		client    ITcpClient
 		file      *os.File
 		tempDelay time.Duration
+		isBreak   = false
 	)
+	for server.running && !isBreak {
+		safe(func() {
+			if conn, err = server.listener.AcceptTCP(); err == nil {
+				if server.maxLoad == 0 || atomic.LoadInt32(&server.currLoad) < server.maxLoad {
+					if runtime.GOOS == "linux" {
+						if file, err = conn.File(); err == nil {
+							idx = uint64(file.Fd())
+						}
+					} else {
+						server.clientCount++
+						if server.clientCount < 0 {
+							server.clientCount = 0
+						}
+						idx = server.clientCount
+					}
 
-	tcpAddr, err = net.ResolveTCPAddr("tcp", addr)
-	if err != nil {
-		logDebug("[TcpServer %s] ResolveTCPAddr error: %v", server.tag, err)
-		return err
-	}
-
-	server.listener, err = net.ListenTCP("tcp", tcpAddr)
-
-	if err != nil {
-		logDebug("[TcpServer %s] Listening error: %v", server.tag, err)
-		return err
-	}
-
-	defer server.listener.Close()
-
-	server.running = true
-
-	logDebug("[TcpServer %s] Running on: \"%s\"", server.tag, tcpAddr.String())
-	for server.running {
-		if conn, err = server.listener.AcceptTCP(); err == nil {
-			if server.maxLoad == 0 || atomic.LoadInt32(&server.currLoad) < server.maxLoad {
-				if runtime.GOOS == "linux" {
-					if file, err = conn.File(); err == nil {
-						idx = uint64(file.Fd())
+					if err = server.OnNewConn(conn); err == nil {
+						client = server.CreateClient(idx, conn, server, server.NewCipher())
+						server.addClient(client)
+						client.Start()
+						server.OnNewClient(client)
+					} else {
+						logDebug("[TcpServer %s] init conn error: %v\n", server.tag, err)
 					}
 				} else {
-					server.clientCount++
-					if server.clientCount < 0 {
-						server.clientCount = 0
-					}
-					idx = server.clientCount
-				}
-
-				if err = server.OnNewConn(conn); err == nil {
-					client = server.CreateClient(idx, conn, server, server.NewCipher())
-					server.addClient(client)
-					client.OnClose(_client_rm_from_server, server.deleClient)
-					client.Start()
-					server.OnNewClient(client)
-				} else {
-					logDebug("[TcpServer %s] init conn error: %v\n", server.tag, err)
+					conn.Close()
 				}
 			} else {
-				conn.Close()
-			}
-		} else {
-			if ne, ok := err.(net.Error); ok && ne.Temporary() {
-				if tempDelay == 0 {
-					tempDelay = 5 * time.Millisecond
+				if ne, ok := err.(net.Error); ok && ne.Temporary() {
+					if tempDelay == 0 {
+						tempDelay = 5 * time.Millisecond
+					} else {
+						tempDelay *= 2
+					}
+					if max := 1 * time.Second; tempDelay > max {
+						tempDelay = max
+					}
+					logDebug("[TcpServer %s] Accept error: %v; retrying in %v", server.tag, err, tempDelay)
+					time.Sleep(tempDelay)
 				} else {
-					tempDelay *= 2
+					logDebug("[TcpServer %s] Accept error: %v\n", server.tag, err)
+					isBreak = true
 				}
-				if max := 1 * time.Second; tempDelay > max {
-					tempDelay = max
-				}
-				logDebug("[TcpServer %s] Accept error: %v; retrying in %v", server.tag, err, tempDelay)
-				time.Sleep(tempDelay)
-				continue
 			}
-
-			logDebug("[TcpServer %s] Accept error: %v\n", server.tag, err)
-			break
-		}
+		})
 	}
+
 	return err
 }
 
@@ -190,7 +177,24 @@ func (server *TcpServer) Start(addr string) error {
 	if !running {
 		server.Add(1)
 		defer deleteTcpServer(server.tag)
-		return server.startListener(addr)
+
+		tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+		if err != nil {
+			logDebug("[TcpServer %s] ResolveTCPAddr error: %v", server.tag, err)
+			return err
+		}
+
+		server.listener, err = net.ListenTCP("tcp", tcpAddr)
+		if err != nil {
+			logDebug("[TcpServer %s] Listening error: %v", server.tag, err)
+			return err
+		}
+
+		server.addr = addr
+		defer server.listener.Close()
+
+		server.running = true
+		return server.startListenerLoop()
 	}
 	return fmt.Errorf("server already started")
 }
@@ -212,8 +216,9 @@ func (server *TcpServer) Stop() {
 	if server.stopTimeout > 0 {
 		timer := time.AfterFunc(server.stopTimeout, func() {
 			logDebug("[TcpServer %s] Stop Timeout.", server.tag)
-			// time.Sleep(time.Second / 10)
-			// os.Exit(-1)
+			if server.onStopTimeout != nil {
+				server.onStopTimeout()
+			}
 		})
 		defer timer.Stop()
 	}
@@ -227,25 +232,21 @@ func (server *TcpServer) Stop() {
 	if server.onStopHandler != nil {
 		server.onStopHandler(server)
 	}
-	time.Sleep(time.Second / 10)
 	logDebug("[TcpServer %s] Stop Done.", server.tag)
 }
 
-func (server *TcpServer) StopWithTimeout(to time.Duration) {
-	server.stopTimeout = to
+func (server *TcpServer) StopWithTimeout(stopTimeout time.Duration, onStopTimeout func()) {
+	server.stopTimeout = stopTimeout
+	server.onStopTimeout = onStopTimeout
 	server.Stop()
 }
 
-func (server *TcpServer) Serve(addr string, args ...interface{}) {
+func (server *TcpServer) Serve(addr string, stopTimeout time.Duration) {
 	safeGo(func() {
 		server.Start(addr)
 	})
 
-	if len(args) > 0 {
-		if to, ok := args[0].(time.Duration); ok {
-			server.stopTimeout = to
-		}
-	}
+	server.stopTimeout = stopTimeout
 
 	handleSignal(func(sig os.Signal) {
 		if sig == syscall.SIGTERM || sig == syscall.SIGINT {

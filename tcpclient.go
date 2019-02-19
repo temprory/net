@@ -138,13 +138,17 @@ func (client *TcpClient) IsRunning() bool {
 
 func (client *TcpClient) OnClose(tag interface{}, cb func(client ITcpClient)) {
 	client.Lock()
-	client.onCloseMap[tag] = cb
+	if client.running {
+		client.onCloseMap[tag] = cb
+	}
 	client.Unlock()
 }
 
 func (client *TcpClient) CancelOnClose(tag interface{}) {
 	client.Lock()
-	delete(client.onCloseMap, tag)
+	if client.running {
+		delete(client.onCloseMap, tag)
+	}
 	client.Unlock()
 }
 
@@ -312,29 +316,24 @@ func (client *TcpClient) restart(conn *net.TCPConn) {
 		}
 		client.chSend = make(chan asyncMessage, sendQsize)
 
-		safeGo(client.reader)
 		safeGo(client.writer)
+		safeGo(client.reader)
 	}
 }
 
 //only called once when reader exit
 func (client *TcpClient) stop() {
 	defer handlePanic()
+
 	client.Lock()
-	running := client.running
 	client.running = false
 	client.Unlock()
-	if running {
-		if client.conn != nil {
-			client.conn.CloseRead()
-			client.conn.CloseWrite()
-			client.conn.Close()
-		}
-	}
 
-	if client.chSend != nil {
-		close(client.chSend)
-	}
+	close(client.chSend)
+
+	client.conn.CloseRead()
+	client.conn.CloseWrite()
+	client.conn.Close()
 
 	for _, cb := range client.onCloseMap {
 		cb(client)
@@ -352,9 +351,12 @@ func (client *TcpClient) Stop() error {
 	client.Unlock()
 	if running {
 		if client.conn != nil {
-			client.conn.CloseRead()
-			client.conn.CloseWrite()
-			return client.conn.Close()
+			err := client.conn.CloseRead()
+			if err != nil {
+				return err
+			}
+			return client.conn.CloseWrite()
+			//return client.conn.Close()
 		}
 	}
 	return ErrTcpClientIsStopped
@@ -382,8 +384,8 @@ func (client *TcpClient) writer() {
 			asyncMsg.cb(client, err)
 		}
 		if err != nil {
-			//client.Stop()
-			break
+			client.Stop()
+			//break
 		}
 		client.sendSeq++
 	}
