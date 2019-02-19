@@ -399,6 +399,7 @@ func (engine *TcpEngin) initRpcHandler() {
 			handler, ok := engine.rpcMethodHandlerMap[method]
 			if !ok {
 				client.SendMsg(NewRpcMessage(CmdRpcMethodError, msg.RpcSeq(), []byte(fmt.Sprintf("invalid rpc method %s", method))))
+				return
 			}
 			rawmsg := msg.(*Message)
 			rawmsg.data = rawmsg.data[:(len(rawmsg.data) - 1 - methodLen)]
