@@ -44,10 +44,11 @@ type ITcpClient interface {
 	UserData() interface{}
 	SetUserData(interface{})
 
-	Start()
 	Keepalive(interval time.Duration)
 	Stop() error
 	Shutdown() error
+
+	start()
 }
 
 type TcpClient struct {
@@ -276,14 +277,9 @@ func (client *TcpClient) SetUserData(data interface{}) {
 	client.userdata = data
 }
 
-func (client *TcpClient) Start() {
-	client.Lock()
-	if !client.running {
-		client.running = true
-		safeGo(client.reader)
-		safeGo(client.writer)
-	}
-	client.Unlock()
+func (client *TcpClient) start() {
+	safeGo(client.reader)
+	safeGo(client.writer)
 }
 
 func (client *TcpClient) Keepalive(interval time.Duration) {
@@ -424,7 +420,7 @@ func createTcpClient(idx uint64, conn *net.TCPConn, parent ITcpEngin, cipher ICi
 		cipher:     cipher,
 		chSend:     make(chan asyncMessage, sendQsize),
 		onCloseMap: map[interface{}]func(ITcpClient){},
-		running:    false,
+		running:    true,
 	}
 }
 
@@ -441,7 +437,7 @@ func NewTcpClient(addr string, parent ITcpEngin, cipher ICipher, autoReconn bool
 	}
 
 	client := createTcpClient(0, conn, parent, cipher)
-	client.Start()
+	client.start()
 
 	if autoReconn {
 		client.OnClose("reconn", func(ITcpClient) {

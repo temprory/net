@@ -53,8 +53,9 @@ func (server *TcpServer) addClient(client ITcpClient) {
 		server.Lock()
 		server.clients[client] = struct{}{}
 		server.Unlock()
-		client.OnClose(_client_rm_from_server, server.deleClient)
+
 	}
+	client.OnClose(_client_rm_from_server, server.deleClient)
 	atomic.AddInt32(&server.currLoad, 1)
 }
 
@@ -137,7 +138,7 @@ func (server *TcpServer) startListenerLoop() error {
 					if err = server.OnNewConn(conn); err == nil {
 						client = server.CreateClient(idx, conn, server, server.NewCipher())
 						server.addClient(client)
-						client.Start()
+						client.start()
 						server.OnNewClient(client)
 					} else {
 						logDebug("[TcpServer %s] init conn error: %v\n", server.tag, err)
