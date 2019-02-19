@@ -321,7 +321,7 @@ func (engine *TcpEngin) HandleSend(sender func(client ITcpClient, data []byte) e
 
 func (engine *TcpEngin) OnMessage(client ITcpClient, msg IMessage) {
 	if !engine.running {
-		logDebug("engine is not running, ignore cmd %d, ip: %v", msg.Cmd(), client.Ip())
+		logDebug("engine is not running, ignore cmd %X, ip: %v", msg.Cmd(), client.Ip())
 		return
 	}
 
