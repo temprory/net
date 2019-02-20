@@ -21,9 +21,10 @@ type ITcpServer interface {
 	Stop()
 	StopWithTimeout(timeout time.Duration, onStopTimeout func())
 	Serve(addr string, stopTimeout time.Duration)
-	CurrLoad() int32
-	MaxLoad() int32
-	SetMaxConcurrent(maxLoad int32)
+	CurrLoad() int64
+	MaxLoad() int64
+	SetMaxConcurrent(maxLoad int64)
+	AcceptedNum() int64
 	HandleServerStop(stopHandler func(server ITcpServer))
 	EnableBroadcast()
 	Broadcast(msg IMessage)
@@ -36,9 +37,9 @@ type TcpServer struct {
 	//running       bool
 	enableBroad   bool
 	addr          string
-	clientCount   uint64
-	currLoad      int32
-	maxLoad       int32
+	accepted      int64
+	currLoad      int64
+	maxLoad       int64
 	listener      *net.TCPListener
 	stopTimeout   time.Duration
 	onStopTimeout func()
@@ -52,7 +53,7 @@ func (server *TcpServer) addClient(client ITcpClient) {
 		server.Unlock()
 
 	}
-	atomic.AddInt32(&server.currLoad, 1)
+	atomic.AddInt64(&server.currLoad, 1)
 	server.OnNewClient(client)
 }
 
@@ -62,35 +63,7 @@ func (server *TcpServer) deleClient(client ITcpClient) {
 		delete(server.clients, client)
 		server.Unlock()
 	}
-	atomic.AddInt32(&server.currLoad, -1)
-}
-
-func (server *TcpServer) EnableBroadcast() {
-	server.enableBroad = true
-}
-
-func (server *TcpServer) Broadcast(msg IMessage) {
-	if !server.enableBroad {
-		panic(ErrorBroadcastNotEnabled)
-	}
-	server.Lock()
-	for c, _ := range server.clients {
-		c.SendMsg(msg)
-	}
-	server.Unlock()
-}
-
-func (server *TcpServer) BroadcastWithFilter(msg IMessage, filter func(ITcpClient) bool) {
-	if !server.enableBroad {
-		panic(ErrorBroadcastNotEnabled)
-	}
-	server.Lock()
-	for c, _ := range server.clients {
-		if filter(c) {
-			c.SendMsg(msg)
-		}
-	}
-	server.Unlock()
+	atomic.AddInt64(&server.currLoad, -1)
 }
 
 func (server *TcpServer) stopClients() {
@@ -117,18 +90,18 @@ func (server *TcpServer) listenerLoop() error {
 	)
 	for server.running {
 		if conn, err = server.listener.AcceptTCP(); err == nil {
-			if server.maxLoad == 0 || atomic.LoadInt32(&server.currLoad) < server.maxLoad {
+			if server.maxLoad == 0 || atomic.LoadInt64(&server.currLoad) < server.maxLoad {
 				// if runtime.GOOS == "linux" {
 				// 	if file, err = conn.File(); err == nil {
 				// 		idx = uint64(file.Fd())
 				// 	}
 				// } else {
-				// 	idx = server.clientCount
-				// 	server.clientCount++
+				// 	idx = server.accepted
+				// 	server.accepted++
 				// }
 
-				// idx = server.clientCount
-				server.clientCount++
+				// idx = server.accepted
+				server.accepted++
 
 				if err = server.OnNewConn(conn); err == nil {
 					client = server.CreateClient(conn, server, server.NewCipher())
@@ -248,21 +221,53 @@ func (server *TcpServer) Serve(addr string, stopTimeout time.Duration) {
 	})
 }
 
-func (server *TcpServer) CurrLoad() int32 {
-	return atomic.LoadInt32(&server.currLoad)
+func (server *TcpServer) CurrLoad() int64 {
+	return atomic.LoadInt64(&server.currLoad)
 }
 
-func (server *TcpServer) MaxLoad() int32 {
+func (server *TcpServer) MaxLoad() int64 {
 	return server.maxLoad
 }
 
-func (server *TcpServer) SetMaxConcurrent(maxLoad int32) {
+func (server *TcpServer) SetMaxConcurrent(maxLoad int64) {
 	server.maxLoad = maxLoad
+}
+
+func (server *TcpServer) AcceptedNum() int64 {
+	return server.accepted
 }
 
 //handle message by cmd
 func (server *TcpServer) HandleServerStop(stopHandler func(server ITcpServer)) {
 	server.onStopHandler = stopHandler
+}
+
+func (server *TcpServer) EnableBroadcast() {
+	server.enableBroad = true
+}
+
+func (server *TcpServer) Broadcast(msg IMessage) {
+	if !server.enableBroad {
+		panic(ErrorBroadcastNotEnabled)
+	}
+	server.Lock()
+	for c, _ := range server.clients {
+		c.SendMsg(msg)
+	}
+	server.Unlock()
+}
+
+func (server *TcpServer) BroadcastWithFilter(msg IMessage, filter func(ITcpClient) bool) {
+	if !server.enableBroad {
+		panic(ErrorBroadcastNotEnabled)
+	}
+	server.Lock()
+	for c, _ := range server.clients {
+		if filter(c) {
+			c.SendMsg(msg)
+		}
+	}
+	server.Unlock()
 }
 
 func NewTcpServer(tag string) ITcpServer {
