@@ -212,6 +212,9 @@ func (server *TcpServer) Serve(addr string, stopTimeout time.Duration) {
 	})
 
 	server.stopTimeout = stopTimeout
+	server.onStopTimeout = func() {
+		os.Exit(0)
+	}
 
 	handleSignal(func(sig os.Signal) {
 		if sig == syscall.SIGTERM || sig == syscall.SIGINT {

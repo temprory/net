@@ -23,10 +23,10 @@ const (
 	_ext_idx_begin int = 8
 	_ext_idx_end   int = 16
 
-	CmdPing           = uint32(0)
-	CmdSetReaIp       = uint32(0xFFFFFFFF)
-	CmdRpcMethod      = uint32(0xFFFFFFFE)
-	CmdRpcMethodError = uint32(0xFFFFFFFD)
+	CmdPing           = uint32(0xFFFFFFFF)
+	CmdSetReaIp       = uint32(0xFFFFFFFE)
+	CmdRpcMethod      = uint32(0xFFFFFFFD)
+	CmdRpcMethodError = uint32(0xFFFFFFFC)
 )
 
 type IMessage interface {

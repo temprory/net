@@ -330,8 +330,15 @@ func (engine *TcpEngin) HandleSend(sender func(client ITcpClient, data []byte) e
 
 func (engine *TcpEngin) OnMessage(client ITcpClient, msg IMessage) {
 	if !engine.running {
-		logDebug("engine is not running, ignore cmd %X, ip: %v", msg.Cmd(), client.Ip())
-		return
+		switch msg.Cmd() {
+		case CmdPing:
+		case CmdSetReaIp:
+		case CmdRpcMethod:
+		case CmdRpcMethodError:
+		default:
+			logDebug("engine is not running, ignore cmd %X, ip: %v", msg.Cmd(), client.Ip())
+			return
+		}
 	}
 
 	if engine.onMsgHandler != nil {
@@ -367,66 +374,90 @@ func (engine *TcpEngin) Handle(cmd uint32, handler func(client ITcpClient, msg I
 	if cmd == CmdSetReaIp {
 		panic(ErrorReservedCmdSetRealip)
 	}
+	if cmd == CmdRpcMethod {
+		panic(ErrorReservedCmdRpcMethod)
+	}
+	if cmd == CmdRpcMethodError {
+		panic(ErrorReservedCmdRpcMethodError)
+	}
 	if _, ok := engine.handlerMap[cmd]; ok {
-		panic(fmt.Errorf("handler for cmd %v exists", cmd))
+		panic(fmt.Errorf("Handle failed: handler for cmd %v exists", cmd))
 	}
 	engine.handlerMap[cmd] = handler
 }
 
 //handle rpc cmd
-func (engine *TcpEngin) HandleRpcCmd(cmd uint32, h func(ctx *RpcContext), async bool) {
-	engine.Handle(cmd, func(client ITcpClient, msg IMessage) {
-		if async {
+func (engine *TcpEngin) HandleRpcCmd(cmd uint32, handler func(ctx *RpcContext), async bool) {
+	if cmd == CmdPing {
+		panic(ErrorReservedCmdPing)
+	}
+	if cmd == CmdSetReaIp {
+		panic(ErrorReservedCmdSetRealip)
+	}
+	if cmd == CmdRpcMethod {
+		panic(ErrorReservedCmdRpcMethod)
+	}
+	if cmd == CmdRpcMethodError {
+		panic(ErrorReservedCmdRpcMethodError)
+	}
+	if _, ok := engine.handlerMap[cmd]; ok {
+		panic(fmt.Errorf("HandleRpcCmd failed: handler for cmd %v exists", cmd))
+	}
+	if async {
+		engine.handlerMap[cmd] = func(client ITcpClient, msg IMessage) {
 			safeGo(func() {
-				h(&RpcContext{client, msg})
+				handler(&RpcContext{client, msg})
 			})
-		} else {
-			h(&RpcContext{client, msg})
 		}
-	})
+	} else {
+		engine.handlerMap[cmd] = func(client ITcpClient, msg IMessage) {
+			handler(&RpcContext{client, msg})
+		}
+	}
+}
+
+func (engine *TcpEngin) onRpcMethod(client ITcpClient, msg IMessage) {
+	data := msg.Body()
+	if len(data) < 2 {
+		client.SendMsg(NewRpcMessage(CmdRpcMethodError, msg.RpcSeq(), []byte("invalid rpc payload")))
+		return
+	}
+	methodLen := int(data[len(data)-1])
+	if methodLen <= 0 || methodLen > 128 || len(data)-1 < methodLen {
+		client.SendMsg(NewRpcMessage(CmdRpcMethodError, msg.RpcSeq(), []byte(fmt.Sprintf("invalid rpc method length %d, should between 0 and 128(not including 0 and 128)", methodLen))))
+		return
+	}
+	method := string(data[(len(data) - 1 - methodLen):(len(data) - 1)])
+	handler, ok := engine.rpcMethodHandlerMap[method]
+	if !ok {
+		client.SendMsg(NewRpcMessage(CmdRpcMethodError, msg.RpcSeq(), []byte(fmt.Sprintf("invalid rpc method %s", method))))
+		return
+	}
+	rawmsg := msg.(*Message)
+	rawmsg.data = rawmsg.data[:(len(rawmsg.data) - 1 - methodLen)]
+	if handler.async {
+		safeGo(func() {
+			handler.handler(&RpcContext{client, msg})
+		})
+	} else {
+		handler.handler(&RpcContext{client, msg})
+	}
 }
 
 func (engine *TcpEngin) initRpcHandler() {
 	if engine.rpcMethodHandlerMap == nil {
-		//engine.rpcMethodHandlerMap = map[string]func(ITcpClient, IMessage){}
 		engine.rpcMethodHandlerMap = map[string]struct {
 			handler func(*RpcContext)
 			async   bool
 		}{}
-		engine.Handle(CmdRpcMethod, func(client ITcpClient, msg IMessage) {
-			data := msg.Body()
-			if len(data) < 2 {
-				client.SendMsg(NewRpcMessage(CmdRpcMethodError, msg.RpcSeq(), []byte("invalid rpc payload")))
-				return
-			}
-			methodLen := int(data[len(data)-1])
-			if methodLen <= 0 || methodLen > 128 || len(data)-1 < methodLen {
-				client.SendMsg(NewRpcMessage(CmdRpcMethodError, msg.RpcSeq(), []byte(fmt.Sprintf("invalid rpc method length %d, should between 0 and 128(not including 0 and 128)", methodLen))))
-				return
-			}
-			method := string(data[(len(data) - 1 - methodLen):(len(data) - 1)])
-			handler, ok := engine.rpcMethodHandlerMap[method]
-			if !ok {
-				client.SendMsg(NewRpcMessage(CmdRpcMethodError, msg.RpcSeq(), []byte(fmt.Sprintf("invalid rpc method %s", method))))
-				return
-			}
-			rawmsg := msg.(*Message)
-			rawmsg.data = rawmsg.data[:(len(rawmsg.data) - 1 - methodLen)]
-			if handler.async {
-				safeGo(func() {
-					handler.handler(&RpcContext{client, msg})
-				})
-			} else {
-				handler.handler(&RpcContext{client, msg})
-			}
-		})
+		engine.handlerMap[CmdRpcMethod] = engine.onRpcMethod
 	}
 }
 
 func (engine *TcpEngin) HandleRpcMethod(method string, h func(ctx *RpcContext), async bool) {
 	engine.initRpcHandler()
 	if _, ok := engine.rpcMethodHandlerMap[method]; ok {
-		panic(fmt.Errorf("handler for method %v exists", method))
+		panic(fmt.Errorf("HandleRpcMethod failed: handler for method %v exists", method))
 	}
 	engine.rpcMethodHandlerMap[method] = struct {
 		handler func(*RpcContext)
