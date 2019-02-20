@@ -56,17 +56,17 @@ func onJsonRpc(ctx *net.RpcContext) {
 	}
 }
 
-func onMsgPackRpc(ctx *net.RpcContext) {
+func onMsgpackRpc(ctx *net.RpcContext) {
 	req := &HelloRequest{}
-	err := ctx.BindMsgPack(req)
+	err := ctx.BindMsgpack(req)
 	if err != nil {
-		log.Error("onMsgPackRpc failed: %v", err)
+		log.Error("onMsgpackRpc failed: %v", err)
 		return
 	}
-	//log.Info("-- onMsgPackRpc: %v", req.Name)
-	err = ctx.WriteMsgPack(&HelloReply{Message: req.Name})
+	//log.Info("-- onMsgpackRpc: %v", req.Name)
+	err = ctx.WriteMsgpack(&HelloReply{Message: req.Name})
 	if err != nil {
-		log.Error("onMsgPackRpc failed: %v", err)
+		log.Error("onMsgpackRpc failed: %v", err)
 	}
 }
 
@@ -89,11 +89,11 @@ func main() {
 	server.SetMaxConcurrent(1000)
 	server.HandleRpcCmd(CMD_GOB_RPC, onGobRpc, false)
 	server.HandleRpcCmd(CMD_JSON_RPC, onJsonRpc, false)
-	server.HandleRpcCmd(CMD_MSGPACK_RPC, onMsgPackRpc, false)
+	server.HandleRpcCmd(CMD_MSGPACK_RPC, onMsgpackRpc, false)
 	server.HandleRpcCmd(CMD_PROTOBUF_RPC, onProtobufRpc, false)
 	server.HandleRpcMethod("GobRpc.Hello", onGobRpc, false)
 	server.HandleRpcMethod("JsonRpc.Hello", onJsonRpc, false)
-	server.HandleRpcMethod("MsgPackRpc.Hello", onMsgPackRpc, false)
+	server.HandleRpcMethod("MsgpackRpc.Hello", onMsgpackRpc, false)
 	server.HandleRpcMethod("ProtobufRpc.Hello", onProtobufRpc, false)
 
 	server.Serve(":8888", time.Second*5)

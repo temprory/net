@@ -64,11 +64,11 @@ func (ctx *RpcContext) WriteGob(v interface{}) error {
 	return ctx.Client.SendMsg(NewRpcMessage(ctx.Msg.Cmd(), ctx.Msg.RpcSeq(), buffer.Bytes()))
 }
 
-func (ctx *RpcContext) BindMsgPack(v interface{}) error {
+func (ctx *RpcContext) BindMsgpack(v interface{}) error {
 	return msgpack.Unmarshal(ctx.Body(), v)
 }
 
-func (ctx *RpcContext) WriteMsgPack(v interface{}) error {
+func (ctx *RpcContext) WriteMsgpack(v interface{}) error {
 	data, err := msgpack.Marshal(v)
 	if err != nil {
 		return err

@@ -171,11 +171,11 @@ func startJsonRpcMethodClient() {
 	}
 }
 
-func startMsgPackRpcCmdClient() {
+func startMsgpackRpcCmdClient() {
 	defer wg.Done()
 
 	addr := "127.0.0.1:8888"
-	client, err := net.NewMsgPackRpcClient(addr, nil)
+	client, err := net.NewMsgpackRpcClient(addr, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
 	}
@@ -193,11 +193,11 @@ func startMsgPackRpcCmdClient() {
 	}
 }
 
-func startMsgPackRpcMethodClient() {
+func startMsgpackRpcMethodClient() {
 	defer wg.Done()
 
 	addr := "127.0.0.1:8888"
-	client, err := net.NewMsgPackRpcClient(addr, nil)
+	client, err := net.NewMsgpackRpcClient(addr, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
 	}
@@ -205,7 +205,7 @@ func startMsgPackRpcMethodClient() {
 	for i := int64(0); i < loopNum; i++ {
 		req := &HelloRequest{Name: fmt.Sprintf("hello_%d", i)}
 		rsp := &HelloReply{}
-		err := client.CallMethodWithTimeout("MsgPackRpc.Hello", req, rsp, time.Second*3)
+		err := client.CallMethodWithTimeout("MsgpackRpc.Hello", req, rsp, time.Second*3)
 		if err != nil {
 			log.Debug("msgpackrpc mechod failed: %v", err)
 		}
@@ -264,15 +264,15 @@ func main() {
 	for i := int64(0); i < clientNum; i++ {
 		// {
 		// 	wg.Add(1)
-		// 	go startMsgPackRpcMethodClient()
+		// 	go startJsonRpcCmdClient()
 		// 	wg.Add(1)
-		// 	go startMsgPackRpcMethodClient()
+		// 	go startJsonRpcMethodClient()
 		// }
 		// {
 		// 	wg.Add(1)
-		// 	go startMsgPackRpcMethodClient()
+		// 	go startMsgpackRpcCmdClient()
 		// 	wg.Add(1)
-		// 	go startMsgPackRpcMethodClient()
+		// 	go startMsgpackRpcMethodClient()
 		// }
 		{
 			// wg.Add(1)

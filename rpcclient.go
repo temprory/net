@@ -311,11 +311,11 @@ func NewGobRpcClient(addr string, onConnected func(ITcpClient)) (IRpcClient, err
 	return &GobRpcClient{c}, nil
 }
 
-type MsgPackRpcClient struct {
+type MsgpackRpcClient struct {
 	Client IRawRpcClient
 }
 
-func (client *MsgPackRpcClient) CallCmd(cmd uint32, req interface{}, rsp interface{}) error {
+func (client *MsgpackRpcClient) CallCmd(cmd uint32, req interface{}, rsp interface{}) error {
 	data, err := msgpack.Marshal(req)
 	if err != nil {
 		return err
@@ -330,7 +330,7 @@ func (client *MsgPackRpcClient) CallCmd(cmd uint32, req interface{}, rsp interfa
 	return err
 }
 
-func (client *MsgPackRpcClient) CallCmdWithTimeout(cmd uint32, req interface{}, rsp interface{}, timeout time.Duration) error {
+func (client *MsgpackRpcClient) CallCmdWithTimeout(cmd uint32, req interface{}, rsp interface{}, timeout time.Duration) error {
 	data, err := msgpack.Marshal(req)
 	if err != nil {
 		return err
@@ -345,7 +345,7 @@ func (client *MsgPackRpcClient) CallCmdWithTimeout(cmd uint32, req interface{}, 
 	return err
 }
 
-func (client *MsgPackRpcClient) CallMethod(method string, req interface{}, rsp interface{}) error {
+func (client *MsgpackRpcClient) CallMethod(method string, req interface{}, rsp interface{}) error {
 	data, err := msgpack.Marshal(req)
 	if err != nil {
 		return err
@@ -363,7 +363,7 @@ func (client *MsgPackRpcClient) CallMethod(method string, req interface{}, rsp i
 	return err
 }
 
-func (client *MsgPackRpcClient) CallMethodWithTimeout(method string, req interface{}, rsp interface{}, timeout time.Duration) error {
+func (client *MsgpackRpcClient) CallMethodWithTimeout(method string, req interface{}, rsp interface{}, timeout time.Duration) error {
 	data, err := msgpack.Marshal(req)
 	if err != nil {
 		return err
@@ -381,12 +381,12 @@ func (client *MsgPackRpcClient) CallMethodWithTimeout(method string, req interfa
 	return err
 }
 
-func NewMsgPackRpcClient(addr string, onConnected func(ITcpClient)) (IRpcClient, error) {
+func NewMsgpackRpcClient(addr string, onConnected func(ITcpClient)) (IRpcClient, error) {
 	c, err := NewRpcClient(addr, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &MsgPackRpcClient{c}, nil
+	return &MsgpackRpcClient{c}, nil
 }
 
 type ProtobufRpcClient struct {
