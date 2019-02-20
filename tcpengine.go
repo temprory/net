@@ -15,9 +15,9 @@ type ITcpEngin interface {
 	HandleNewConn(func(conn *net.TCPConn) error)
 
 	//on new connect callback
-	CreateClient(idx uint64, conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient
+	CreateClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient
 
-	HandleCreateClient(createClient func(idx uint64, conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient)
+	HandleCreateClient(createClient func(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient)
 
 	//on new connect callback
 	OnNewClient(client ITcpClient)
@@ -109,7 +109,7 @@ type TcpEngin struct {
 	sockSendBlockTime time.Duration
 
 	onNewConnHandler      func(conn *net.TCPConn) error
-	createClientHandler   func(idx uint64, conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient
+	createClientHandler   func(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient
 	onNewClientHandler    func(client ITcpClient)
 	newCipherHandler      func() ICipher
 	onDisconnectedHandler func(client ITcpClient)
@@ -120,6 +120,8 @@ type TcpEngin struct {
 }
 
 func (engine *TcpEngin) OnNewConn(conn *net.TCPConn) error {
+	defer handlePanic()
+
 	if engine.onNewConnHandler != nil {
 		return engine.onNewConnHandler(conn)
 	}
@@ -163,15 +165,15 @@ func (engine *TcpEngin) HandleNewConn(onNewConn func(conn *net.TCPConn) error) {
 }
 
 //on new connect callback
-func (engine *TcpEngin) CreateClient(idx uint64, conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient {
+func (engine *TcpEngin) CreateClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient {
 	if engine.createClientHandler != nil {
-		return engine.createClientHandler(idx, conn, parent, cipher)
+		return engine.createClientHandler(conn, parent, cipher)
 	}
-	return createTcpClient(idx, conn, parent, cipher)
+	return createTcpClient(conn, parent, cipher)
 }
 
 //setting on new connect callback
-func (engine *TcpEngin) HandleCreateClient(createClient func(idx uint64, conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient) {
+func (engine *TcpEngin) HandleCreateClient(createClient func(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient) {
 	engine.createClientHandler = createClient
 }
 

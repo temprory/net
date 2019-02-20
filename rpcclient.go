@@ -140,7 +140,7 @@ func NewRpcClient(addr string, onConnected func(ITcpClient)) (IRawRpcClient, err
 			}
 		} else {
 			if msg.Cmd() != CmdPing {
-				logError("no rpcsession waiting for rpc response, cmd %X, ip: %v", msg.Cmd(), client.Ip())
+				logDebug("no rpcsession waiting for rpc response, cmd %X, ip: %v", msg.Cmd(), client.Ip())
 			}
 		}
 		// } else {

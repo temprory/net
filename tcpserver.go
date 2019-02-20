@@ -4,18 +4,15 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"runtime"
-	"sync"
+	// "runtime"
+	// "sync"
 	"sync/atomic"
 	"syscall"
 	"time"
 )
 
 var (
-	tcpservers      = make(map[string]*TcpServer)
-	tcpserversMutex = sync.Mutex{}
-
-	_client_rm_from_server = "^_*18616!%$"
+	_client_rm_from_server = 0
 )
 
 type ITcpServer interface {
@@ -55,8 +52,8 @@ func (server *TcpServer) addClient(client ITcpClient) {
 		server.Unlock()
 
 	}
-	client.OnClose(_client_rm_from_server, server.deleClient)
 	atomic.AddInt32(&server.currLoad, 1)
+	server.OnNewClient(client)
 }
 
 func (server *TcpServer) deleClient(client ITcpClient) {
@@ -106,64 +103,60 @@ func (server *TcpServer) stopClients() {
 	}
 }
 
-func (server *TcpServer) startListenerLoop() error {
+func (server *TcpServer) listenerLoop() error {
 	logDebug("[TcpServer %s] Running on: \"%s\"", server.tag, server.addr)
 	defer logDebug("[TcpServer %s] Stopped.", server.tag)
 
 	var (
-		err       error
-		idx       uint64
-		conn      *net.TCPConn
-		client    ITcpClient
-		file      *os.File
+		err error
+		// idx    uint64
+		conn   *net.TCPConn
+		client ITcpClient
+		// file      *os.File
 		tempDelay time.Duration
-		isBreak   = false
 	)
-	for server.running && !isBreak {
-		safe(func() {
-			if conn, err = server.listener.AcceptTCP(); err == nil {
-				if server.maxLoad == 0 || atomic.LoadInt32(&server.currLoad) < server.maxLoad {
-					if runtime.GOOS == "linux" {
-						if file, err = conn.File(); err == nil {
-							idx = uint64(file.Fd())
-						}
-					} else {
-						server.clientCount++
-						if server.clientCount < 0 {
-							server.clientCount = 0
-						}
-						idx = server.clientCount
-					}
+	for server.running {
+		if conn, err = server.listener.AcceptTCP(); err == nil {
+			if server.maxLoad == 0 || atomic.LoadInt32(&server.currLoad) < server.maxLoad {
+				// if runtime.GOOS == "linux" {
+				// 	if file, err = conn.File(); err == nil {
+				// 		idx = uint64(file.Fd())
+				// 	}
+				// } else {
+				// 	idx = server.clientCount
+				// 	server.clientCount++
+				// }
 
-					if err = server.OnNewConn(conn); err == nil {
-						client = server.CreateClient(idx, conn, server, server.NewCipher())
-						server.addClient(client)
-						client.start()
-						server.OnNewClient(client)
-					} else {
-						logDebug("[TcpServer %s] init conn error: %v\n", server.tag, err)
-					}
+				// idx = server.clientCount
+				server.clientCount++
+
+				if err = server.OnNewConn(conn); err == nil {
+					client = server.CreateClient(conn, server, server.NewCipher())
+					client.start()
+					server.addClient(client)
 				} else {
-					conn.Close()
+					logDebug("[TcpServer %s] init conn error: %v\n", server.tag, err)
 				}
 			} else {
-				if ne, ok := err.(net.Error); ok && ne.Temporary() {
-					if tempDelay == 0 {
-						tempDelay = 5 * time.Millisecond
-					} else {
-						tempDelay *= 2
-					}
-					if max := 1 * time.Second; tempDelay > max {
-						tempDelay = max
-					}
-					logDebug("[TcpServer %s] Accept error: %v; retrying in %v", server.tag, err, tempDelay)
-					time.Sleep(tempDelay)
-				} else {
-					logDebug("[TcpServer %s] Accept error: %v\n", server.tag, err)
-					isBreak = true
-				}
+				conn.Close()
 			}
-		})
+		} else {
+			if ne, ok := err.(net.Error); ok && ne.Temporary() {
+				if tempDelay == 0 {
+					tempDelay = 5 * time.Millisecond
+				} else {
+					tempDelay *= 2
+				}
+				if max := 1 * time.Second; tempDelay > max {
+					tempDelay = max
+				}
+				logDebug("[TcpServer %s] Accept error: %v; retrying in %v", server.tag, err, tempDelay)
+				time.Sleep(tempDelay)
+			} else {
+				logDebug("[TcpServer %s] Accept error: %v\n", server.tag, err)
+				break
+			}
+		}
 	}
 
 	return err
@@ -177,7 +170,6 @@ func (server *TcpServer) Start(addr string) error {
 
 	if !running {
 		server.Add(1)
-		defer deleteTcpServer(server.tag)
 
 		tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 		if err != nil {
@@ -194,8 +186,7 @@ func (server *TcpServer) Start(addr string) error {
 		server.addr = addr
 		defer server.listener.Close()
 
-		server.running = true
-		return server.startListenerLoop()
+		return server.listenerLoop()
 	}
 	return fmt.Errorf("server already started")
 }
@@ -275,14 +266,6 @@ func (server *TcpServer) HandleServerStop(stopHandler func(server ITcpServer)) {
 }
 
 func NewTcpServer(tag string) ITcpServer {
-	tcpserversMutex.Lock()
-	defer tcpserversMutex.Unlock()
-
-	if _, ok := tcpservers[tag]; ok {
-		logDebug("NewTcpServer Error: (TcpServer-%s) already exists.", tag)
-		return nil
-	}
-
 	server := &TcpServer{
 		TcpEngin: TcpEngin{
 			clients: map[ITcpClient]struct{}{},
@@ -310,21 +293,7 @@ func NewTcpServer(tag string) ITcpServer {
 		tag: tag,
 	}
 
-	tcpservers[tag] = server
+	server.HandleDisconnected(server.deleClient)
 
 	return server
-}
-
-func deleteTcpServer(name string) {
-	tcpserversMutex.Lock()
-	defer tcpserversMutex.Unlock()
-
-	delete(tcpservers, name)
-}
-
-func GetTcpServerBytag(name string) (*TcpServer, bool) {
-	tcpserversMutex.Lock()
-	defer tcpserversMutex.Unlock()
-	server, ok := tcpservers[name]
-	return server, ok
 }

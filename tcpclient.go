@@ -10,8 +10,6 @@ import (
 )
 
 type ITcpClient interface {
-	Index() uint64
-
 	Conn() *net.TCPConn
 
 	Ip() string
@@ -54,9 +52,6 @@ type ITcpClient interface {
 type TcpClient struct {
 	sync.Mutex
 
-	//client hash index
-	idx uint64
-
 	//tcp connection
 	conn *net.TCPConn
 
@@ -94,10 +89,6 @@ type TcpClient struct {
 	running bool
 
 	shutdown bool
-}
-
-func (client *TcpClient) Index() uint64 {
-	return client.idx
 }
 
 func (client *TcpClient) Conn() *net.TCPConn {
@@ -399,7 +390,7 @@ func (client *TcpClient) reader() {
 	}
 }
 
-func createTcpClient(idx uint64, conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient {
+func createTcpClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient {
 	sendQsize := parent.SendQueueSize()
 	if sendQsize <= 0 {
 		sendQsize = _conf_sock_send_q_size
@@ -414,7 +405,6 @@ func createTcpClient(idx uint64, conn *net.TCPConn, parent ITcpEngin, cipher ICi
 	conn.SetWriteBuffer(parent.SockSendBufLen())
 
 	return &TcpClient{
-		idx:        idx,
 		conn:       conn,
 		parent:     parent,
 		cipher:     cipher,
@@ -436,7 +426,7 @@ func NewTcpClient(addr string, parent ITcpEngin, cipher ICipher, autoReconn bool
 		return nil, err
 	}
 
-	client := createTcpClient(0, conn, parent, cipher)
+	client := createTcpClient(conn, parent, cipher)
 	client.start()
 
 	if autoReconn {
