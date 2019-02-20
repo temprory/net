@@ -211,7 +211,14 @@ func (engine *TcpEngin) OnDisconnected(client ITcpClient) {
 
 //setting on disconnected callback
 func (engine *TcpEngin) HandleDisconnected(onDisconnected func(client ITcpClient)) {
-	engine.onDisconnectedHandler = onDisconnected
+	pre := engine.onDisconnectedHandler
+	engine.onDisconnectedHandler = func(c ITcpClient) {
+		defer handlePanic()
+		if pre != nil {
+			pre(c)
+		}
+		onDisconnected(c)
+	}
 }
 
 //message router
