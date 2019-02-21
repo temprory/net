@@ -16,27 +16,27 @@ var (
 )
 
 type RpcContext struct {
-	Client ITcpClient
-	Msg    IMessage
+	client  ITcpClient
+	message IMessage
 }
 
 func (ctx *RpcContext) Cmd() uint32 {
-	return ctx.Msg.Cmd()
+	return ctx.message.Cmd()
 }
 
 func (ctx *RpcContext) Body() []byte {
-	return ctx.Msg.Body()
+	return ctx.message.Body()
 }
 
 func (ctx *RpcContext) Write(data []byte) error {
-	return ctx.Client.SendMsg(NewRpcMessage(ctx.Msg.Cmd(), ctx.Msg.RpcSeq(), data))
+	return ctx.client.SendMsgSync(NewRpcMessage(ctx.message.Cmd(), ctx.message.RpcSeq(), data))
 }
 
 func (ctx *RpcContext) WriteMsg(msg IMessage) error {
-	if ctx.Msg != msg {
-		msg.SetRpcSeq(ctx.Msg.RpcSeq())
+	if ctx.message != msg {
+		msg.SetRpcSeq(ctx.message.RpcSeq())
 	}
-	return ctx.Client.SendMsg(msg)
+	return ctx.client.SendMsgSync(msg)
 }
 
 func (ctx *RpcContext) BindJson(v interface{}) error {
@@ -48,7 +48,7 @@ func (ctx *RpcContext) WriteJson(v interface{}) error {
 	if err != nil {
 		return err
 	}
-	return ctx.Client.SendMsg(NewRpcMessage(ctx.Msg.Cmd(), ctx.Msg.RpcSeq(), data))
+	return ctx.client.SendDataSync(NewRpcMessage(ctx.message.Cmd(), ctx.message.RpcSeq(), data).data)
 }
 
 func (ctx *RpcContext) BindGob(v interface{}) error {
@@ -61,7 +61,7 @@ func (ctx *RpcContext) WriteGob(v interface{}) error {
 	if err != nil {
 		return err
 	}
-	return ctx.Client.SendMsg(NewRpcMessage(ctx.Msg.Cmd(), ctx.Msg.RpcSeq(), buffer.Bytes()))
+	return ctx.client.SendDataSync(NewRpcMessage(ctx.message.Cmd(), ctx.message.RpcSeq(), buffer.Bytes()).data)
 }
 
 func (ctx *RpcContext) BindMsgpack(v interface{}) error {
@@ -73,7 +73,7 @@ func (ctx *RpcContext) WriteMsgpack(v interface{}) error {
 	if err != nil {
 		return err
 	}
-	return ctx.Client.SendMsg(NewRpcMessage(ctx.Msg.Cmd(), ctx.Msg.RpcSeq(), data))
+	return ctx.client.SendDataSync(NewRpcMessage(ctx.message.Cmd(), ctx.message.RpcSeq(), data).data)
 }
 
 func (ctx *RpcContext) BindProtobuf(v proto.Message) error {
@@ -85,5 +85,5 @@ func (ctx *RpcContext) WriteProtobuf(v proto.Message) error {
 	if err != nil {
 		return err
 	}
-	return ctx.Client.SendMsg(NewRpcMessage(ctx.Msg.Cmd(), ctx.Msg.RpcSeq(), data))
+	return ctx.client.SendDataSync(NewRpcMessage(ctx.message.Cmd(), ctx.message.RpcSeq(), data).data)
 }

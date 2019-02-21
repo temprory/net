@@ -53,13 +53,13 @@ func (client *RpcClient) CallCmd(cmd uint32, data []byte) ([]byte, error) {
 			done: make(chan *RpcMessage, 1),
 		}
 		msg := NewRpcMessage(cmd, session.seq, data)
-		select {
-		case client.chSend <- asyncMessage{msg.Data(), nil}:
-			client.sessionMap[session.seq] = session
-		default:
-			client.parent.OnSendQueueFull(client, msg)
-			return nil, ErrRpcClientSendQueueIsFull
+		if err := client.SendDataSyncWithoutLock(msg.data); err != nil {
+			if err == ErrTcpClientIsStopped {
+				return nil, ErrRpcClientIsDisconnected
+			}
+			return nil, err
 		}
+		client.sessionMap[session.seq] = session
 	} else {
 		client.Unlock()
 		return nil, ErrRpcClientIsDisconnected
@@ -82,13 +82,13 @@ func (client *RpcClient) CallCmdWithTimeout(cmd uint32, data []byte, timeout tim
 			done: make(chan *RpcMessage, 1),
 		}
 		msg := NewRpcMessage(cmd, session.seq, data)
-		select {
-		case client.chSend <- asyncMessage{msg.Data(), nil}:
-			client.sessionMap[session.seq] = session
-		default:
-			client.parent.OnSendQueueFull(client, msg)
-			return nil, ErrRpcClientSendQueueIsFull
+		if err := client.SendDataSyncWithoutLock(msg.data); err != nil {
+			if err == ErrTcpClientIsStopped {
+				return nil, ErrRpcClientIsDisconnected
+			}
+			return nil, err
 		}
+		client.sessionMap[session.seq] = session
 	} else {
 		client.Unlock()
 		return nil, ErrRpcClientIsDisconnected

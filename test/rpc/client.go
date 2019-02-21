@@ -9,6 +9,7 @@ import (
 	"github.com/temprory/log"
 	"github.com/temprory/net"
 	"github.com/temprory/net/test/rpc/pb"
+	//"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -268,19 +269,20 @@ func main() {
 		// 	wg.Add(1)
 		// 	go startJsonRpcMethodClient()
 		// }
-		// {
-		// 	wg.Add(1)
-		// 	go startMsgpackRpcCmdClient()
-		// 	wg.Add(1)
-		// 	go startMsgpackRpcMethodClient()
-		// }
+		{
+			// wg.Add(1)
+			// go startMsgpackRpcCmdClient()
+			wg.Add(1)
+			go startMsgpackRpcMethodClient()
+		}
 		{
 			// wg.Add(1)
 			// go startProtobufRpcCmdClient()
-			wg.Add(1)
-			go startProtobufRpcMethodClient()
+			// wg.Add(1)
+			// go startProtobufRpcMethodClient()
 		}
 	}
+
 	wg.Wait()
 	seconds := time.Since(t0).Seconds()
 	log.Debug("total used: %v, request: %d, %d / s", seconds, totalReqNum, int(float64(totalReqNum)/seconds))
