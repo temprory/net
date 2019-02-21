@@ -377,6 +377,9 @@ func (engine *TcpEngin) Handle(cmd uint32, handler func(client ITcpClient, msg I
 	if cmd == CmdRpcMethodError {
 		panic(ErrorReservedCmdRpcMethodError)
 	}
+	if cmd > CmdUserMax {
+		panic(ErrorReservedCmdInternal)
+	}
 	if _, ok := engine.handlerMap[cmd]; ok {
 		panic(fmt.Errorf("Handle failed: handler for cmd %v exists", cmd))
 	}
@@ -396,6 +399,9 @@ func (engine *TcpEngin) HandleRpcCmd(cmd uint32, handler func(ctx *RpcContext), 
 	}
 	if cmd == CmdRpcMethodError {
 		panic(ErrorReservedCmdRpcMethodError)
+	}
+	if cmd > CmdUserMax {
+		panic(ErrorReservedCmdInternal)
 	}
 	if _, ok := engine.handlerMap[cmd]; ok {
 		panic(fmt.Errorf("HandleRpcCmd failed: handler for cmd %v exists", cmd))

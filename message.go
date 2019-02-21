@@ -27,6 +27,7 @@ const (
 	CmdSetReaIp       = uint32(0xFFFFFFFE)
 	CmdRpcMethod      = uint32(0xFFFFFFFD)
 	CmdRpcMethodError = uint32(0xFFFFFFFC)
+	CmdUserMax        = CmdPing - 10240
 )
 
 type IMessage interface {
