@@ -126,7 +126,7 @@ func (server *TcpServer) listenerLoop() error {
 				logDebug("[TcpServer %s] Accept error: %v; retrying in %v", server.tag, err, tempDelay)
 				time.Sleep(tempDelay)
 			} else {
-				logDebug("[TcpServer %s] Accept error: %v, Exit\n", server.tag, err)
+				logDebug("[TcpServer %s] Accept error: %v", server.tag, err)
 				if server.onStop != nil {
 					server.onStop()
 				}
