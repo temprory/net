@@ -19,7 +19,7 @@ type ITcpServer interface {
 	ITcpEngin
 	Start(addr string) error
 	Stop()
-	StopWithTimeout(timeout time.Duration, onStopTimeout func())
+	StopWithTimeout(timeout time.Duration, onStop func())
 	Serve(addr string, stopTimeout time.Duration)
 	CurrLoad() int64
 	MaxLoad() int64
@@ -42,7 +42,7 @@ type TcpServer struct {
 	maxLoad       int64
 	listener      *net.TCPListener
 	stopTimeout   time.Duration
-	onStopTimeout func()
+	onStop        func()
 	onStopHandler func(server ITcpServer)
 }
 
@@ -126,7 +126,10 @@ func (server *TcpServer) listenerLoop() error {
 				logDebug("[TcpServer %s] Accept error: %v; retrying in %v", server.tag, err, tempDelay)
 				time.Sleep(tempDelay)
 			} else {
-				logDebug("[TcpServer %s] Accept error: %v\n", server.tag, err)
+				logDebug("[TcpServer %s] Accept error: %v, Exit\n", server.tag, err)
+				if server.onStop != nil {
+					server.onStop()
+				}
 				break
 			}
 		}
@@ -146,13 +149,13 @@ func (server *TcpServer) Start(addr string) error {
 
 		tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 		if err != nil {
-			logDebug("[TcpServer %s] ResolveTCPAddr error: %v", server.tag, err)
+			logFatal("[TcpServer %s] ResolveTCPAddr error: %v", server.tag, err)
 			return err
 		}
 
 		server.listener, err = net.ListenTCP("tcp", tcpAddr)
 		if err != nil {
-			logDebug("[TcpServer %s] Listening error: %v", server.tag, err)
+			logFatal("[TcpServer %s] Listening error: %v", server.tag, err)
 			return err
 		}
 
@@ -181,8 +184,8 @@ func (server *TcpServer) Stop() {
 	if server.stopTimeout > 0 {
 		timer := time.AfterFunc(server.stopTimeout, func() {
 			logDebug("[TcpServer %s] Stop Timeout.", server.tag)
-			if server.onStopTimeout != nil {
-				server.onStopTimeout()
+			if server.onStop != nil {
+				server.onStop()
 			}
 		})
 		defer timer.Stop()
@@ -200,9 +203,9 @@ func (server *TcpServer) Stop() {
 	logDebug("[TcpServer %s] Stop Done.", server.tag)
 }
 
-func (server *TcpServer) StopWithTimeout(stopTimeout time.Duration, onStopTimeout func()) {
+func (server *TcpServer) StopWithTimeout(stopTimeout time.Duration, onStop func()) {
 	server.stopTimeout = stopTimeout
-	server.onStopTimeout = onStopTimeout
+	server.onStop = onStop
 	server.Stop()
 }
 
@@ -212,7 +215,7 @@ func (server *TcpServer) Serve(addr string, stopTimeout time.Duration) {
 	})
 
 	server.stopTimeout = stopTimeout
-	server.onStopTimeout = func() {
+	server.onStop = func() {
 		os.Exit(0)
 	}
 
