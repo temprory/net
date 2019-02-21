@@ -11,6 +11,7 @@ var (
 	_conf_sock_recv_buf_len    = 1024
 	_conf_sock_send_buf_len    = 1024
 	_conf_sock_pack_max_len    = 1024 * 1024
+	_conf_sock_linger_seconds  = 0
 	_conf_sock_keepalive_time  = time.Second * 60
 	_conf_sock_recv_block_time = time.Second * 65
 	_conf_sock_send_block_time = time.Second * 5

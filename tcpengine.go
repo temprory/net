@@ -77,6 +77,9 @@ type ITcpEngin interface {
 	SockMaxPackLen() int
 	SetSockMaxPackLen(maxPackLen int)
 
+	SockLingerSeconds() int
+	SetSockLingerSeconds(sec int)
+
 	SockRecvBlockTime() time.Duration
 	SetSockRecvBlockTime(recvBlockTime time.Duration)
 
@@ -101,6 +104,7 @@ type TcpEngin struct {
 	sockRecvBufLen    int
 	sockSendBufLen    int
 	sockMaxPackLen    int
+	sockLingerSeconds int
 	sockKeepaliveTime time.Duration
 	sockRecvBlockTime time.Duration
 	sockSendBlockTime time.Duration
@@ -147,6 +151,11 @@ func (engine *TcpEngin) OnNewConn(conn *net.TCPConn) error {
 	}
 	if err = conn.SetWriteBuffer(engine.sockSendBufLen); err != nil {
 		logDebug("SetWriteBuffer Error: %v.", err)
+		goto ErrExit
+	}
+
+	if err = conn.SetLinger(engine.sockLingerSeconds); err != nil {
+		logDebug("SetLinger Error: %v.", err)
 		goto ErrExit
 	}
 
@@ -540,6 +549,14 @@ func (engine *TcpEngin) SetSockMaxPackLen(maxPackLen int) {
 	engine.sockMaxPackLen = maxPackLen
 }
 
+func (engine *TcpEngin) SockLingerSeconds() int {
+	return engine.sockLingerSeconds
+}
+
+func (engine *TcpEngin) SetSockLingerSeconds(sec int) {
+	engine.sockLingerSeconds = sec
+}
+
 func (engine *TcpEngin) BroadCast(msg IMessage) {
 	engine.Lock()
 	defer engine.Unlock()
@@ -559,6 +576,7 @@ func NewTcpEngine() ITcpEngin {
 		sockRecvBufLen:    _conf_sock_recv_buf_len,
 		sockSendBufLen:    _conf_sock_send_buf_len,
 		sockMaxPackLen:    _conf_sock_pack_max_len,
+		sockLingerSeconds: _conf_sock_linger_seconds,
 		sockRecvBlockTime: _conf_sock_recv_block_time,
 		sockSendBlockTime: _conf_sock_send_block_time,
 		sockKeepaliveTime: _conf_sock_keepalive_time,
