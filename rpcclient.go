@@ -41,6 +41,9 @@ type RpcClient struct {
 func (client *RpcClient) removeSession(seq int64) {
 	client.Lock()
 	delete(client.sessionMap, seq)
+	if len(client.sessionMap) == 0 {
+		client.sessionMap = map[int64]*rpcsession{}
+	}
 	client.Unlock()
 }
 
@@ -63,7 +66,7 @@ func (client *RpcClient) CallCmd(cmd uint32, data []byte) ([]byte, error) {
 	defer client.removeSession(session.seq)
 	msg, ok := <-session.done
 	if !ok {
-		return nil, ErrRpcCallClientError
+		return nil, ErrRpcClientIsDisconnected
 	}
 	return msg.msg.Body(), msg.err
 }
@@ -89,10 +92,11 @@ func (client *RpcClient) CallCmdWithTimeout(cmd uint32, data []byte, timeout tim
 		return nil, ErrRpcClientIsDisconnected
 	}
 	client.Unlock()
+	defer client.removeSession(session.seq)
 	select {
 	case msg, ok := <-session.done:
 		if !ok {
-			return nil, ErrRpcCallClientError
+			return nil, ErrRpcClientIsDisconnected
 		}
 		return msg.msg.Body(), msg.err
 	case <-time.After(timeout):
