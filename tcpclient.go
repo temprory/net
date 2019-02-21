@@ -30,10 +30,10 @@ type ITcpClient interface {
 	SendData(data []byte) error
 	SendDataWithCallback(data []byte, cb func(client ITcpClient, err error)) error
 
-	SendMsgSync(msg IMessage) error
-	SendMsgSyncWithoutLock(msg IMessage) error
-	SendDataSync(data []byte) error
-	SendDataSyncWithoutLock(data []byte) error
+	// SendMsgSync(msg IMessage) error
+	// SendMsgSyncWithoutLock(msg IMessage) error
+	sendDataSync(data []byte) error
+	// sendDataSyncWithoutLock(data []byte) error
 
 	RecvSeq() int64
 	SendSeq() int64
@@ -241,36 +241,21 @@ func (client *TcpClient) SendDataWithCallback(data []byte, cb func(ITcpClient, e
 	return err
 }
 
-func (client *TcpClient) SendMsgSync(msg IMessage) error {
+func (client *TcpClient) sendDataSync(data []byte) error {
 	defer handlePanic()
+	var err error = nil
 	client.Lock()
 	if client.running {
-		client.Unlock()
-		return client.parent.Send(client, msg.Encrypt(client.SendSeq(), client.SendKey(), client.cipher))
+		client.chSend <- asyncMessage{data, nil}
+	} else {
+		err = ErrTcpClientIsStopped
 	}
 	client.Unlock()
-	return ErrTcpClientIsStopped
-}
-
-func (client *TcpClient) SendMsgSyncWithoutLock(msg IMessage) error {
-	defer handlePanic()
-	return client.parent.Send(client, msg.Encrypt(client.SendSeq(), client.SendKey(), client.cipher))
-}
-
-func (client *TcpClient) SendDataSync(data []byte) error {
-	defer handlePanic()
-	client.Lock()
-	if client.running {
-		client.Unlock()
-		return client.parent.Send(client, data)
+	if err != nil {
+		logDebug("sendDataSync -> %v failed: %v", client.Ip(), err)
 	}
-	client.Unlock()
-	return ErrTcpClientIsStopped
-}
 
-func (client *TcpClient) SendDataSyncWithoutLock(data []byte) error {
-	defer handlePanic()
-	return client.parent.Send(client, data)
+	return err
 }
 
 func (client *TcpClient) RecvSeq() int64 {
@@ -396,6 +381,9 @@ func (client *TcpClient) Shutdown() error {
 
 /******************************************************/
 func (client *TcpClient) send(amsg *asyncMessage) error {
+	if !client.running {
+		return ErrTcpClientIsStopped
+	}
 	defer handlePanic()
 	return client.parent.Send(client, amsg.data)
 }

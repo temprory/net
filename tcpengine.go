@@ -92,10 +92,7 @@ type TcpEngin struct {
 
 	clients             map[ITcpClient]struct{}
 	handlerMap          map[uint32]func(ITcpClient, IMessage)
-	rpcMethodHandlerMap map[string]struct {
-		handler func(*RpcContext)
-		async   bool
-	}
+	rpcMethodHandlerMap map[string]func(*RpcContext)
 
 	running           bool
 	sockNoDelay       bool
@@ -435,36 +432,29 @@ func (engine *TcpEngin) onRpcMethod(client ITcpClient, msg IMessage) {
 	}
 	rawmsg := msg.(*Message)
 	rawmsg.data = rawmsg.data[:(len(rawmsg.data) - 1 - methodLen)]
-	if handler.async {
-		safeGo(func() {
-			handler.handler(&RpcContext{client, msg})
-		})
-	} else {
-		handler.handler(&RpcContext{client, msg})
-	}
+	handler(&RpcContext{client, msg})
 }
 
 func (engine *TcpEngin) initRpcHandler() {
 	if engine.rpcMethodHandlerMap == nil {
-		engine.rpcMethodHandlerMap = map[string]struct {
-			handler func(*RpcContext)
-			async   bool
-		}{}
+		engine.rpcMethodHandlerMap = map[string]func(*RpcContext){}
 		engine.handlerMap[CmdRpcMethod] = engine.onRpcMethod
 	}
 }
 
-func (engine *TcpEngin) HandleRpcMethod(method string, h func(ctx *RpcContext), async bool) {
+func (engine *TcpEngin) HandleRpcMethod(method string, handler func(ctx *RpcContext), async bool) {
 	engine.initRpcHandler()
 	if _, ok := engine.rpcMethodHandlerMap[method]; ok {
 		panic(fmt.Errorf("HandleRpcMethod failed: handler for method %v exists", method))
 	}
-	engine.rpcMethodHandlerMap[method] = struct {
-		handler func(*RpcContext)
-		async   bool
-	}{
-		handler: h,
-		async:   async,
+	if async {
+		engine.rpcMethodHandlerMap[method] = func(ctx *RpcContext) {
+			safeGo(func() {
+				handler(ctx)
+			})
+		}
+	} else {
+		engine.rpcMethodHandlerMap[method] = handler
 	}
 }
 
