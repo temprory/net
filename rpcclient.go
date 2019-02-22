@@ -105,9 +105,10 @@ func (client *RpcClient) CallCmdWithTimeout(cmd uint32, data []byte, timeout tim
 	return nil, ErrRpcCallClientError
 }
 
-func NewRpcClient(addr string, onConnected func(ITcpClient)) (IRawRpcClient, error) {
-	engine := NewTcpEngine().(*TcpEngin)
-	engine.running = true
+func NewRpcClient(addr string, engine ITcpEngin, onConnected func(ITcpClient)) (IRawRpcClient, error) {
+	if engine == nil {
+		engine = NewTcpEngine()
+	}
 	engine.SetSockRecvBlockTime(_conf_sock_rpc_recv_block_time)
 	client, err := NewTcpClient(addr, engine, nil, true, onConnected)
 	if err != nil {
@@ -220,8 +221,8 @@ func (client *JsonRpcClient) CallMethodWithTimeout(method string, req interface{
 	return err
 }
 
-func NewJsonRpcClient(addr string, onConnected func(ITcpClient)) (IRpcClient, error) {
-	c, err := NewRpcClient(addr, nil)
+func NewJsonRpcClient(addr string, engine ITcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+	c, err := NewRpcClient(addr, engine, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -302,8 +303,8 @@ func (client *GobRpcClient) CallMethodWithTimeout(method string, req interface{}
 	return err
 }
 
-func NewGobRpcClient(addr string, onConnected func(ITcpClient)) (IRpcClient, error) {
-	c, err := NewRpcClient(addr, nil)
+func NewGobRpcClient(addr string, engine ITcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+	c, err := NewRpcClient(addr, engine, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -380,8 +381,8 @@ func (client *MsgpackRpcClient) CallMethodWithTimeout(method string, req interfa
 	return err
 }
 
-func NewMsgpackRpcClient(addr string, onConnected func(ITcpClient)) (IRpcClient, error) {
-	c, err := NewRpcClient(addr, nil)
+func NewMsgpackRpcClient(addr string, engine ITcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+	c, err := NewRpcClient(addr, engine, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -494,8 +495,8 @@ func (client *ProtobufRpcClient) CallMethodWithTimeout(method string, req interf
 	return err
 }
 
-func NewProtobufRpcClient(addr string, onConnected func(ITcpClient)) (IRpcClient, error) {
-	c, err := NewRpcClient(addr, nil)
+func NewProtobufRpcClient(addr string, engine ITcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+	c, err := NewRpcClient(addr, engine, nil)
 	if err != nil {
 		return nil, err
 	}

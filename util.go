@@ -1,7 +1,10 @@
 package net
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
@@ -79,4 +82,23 @@ func handleSignal(handler func(sig os.Signal)) {
 			}
 		}
 	}
+}
+
+func gzipCompress(data []byte) []byte {
+	var in bytes.Buffer
+	w := gzip.NewWriter(&in)
+	w.Write(data)
+	w.Close()
+	return in.Bytes()
+}
+
+func gzipUnCompress(data []byte) ([]byte, error) {
+	b := bytes.NewReader(data)
+	r, _ := gzip.NewReader(b)
+	defer r.Close()
+	undatas, err := ioutil.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+	return undatas, nil
 }

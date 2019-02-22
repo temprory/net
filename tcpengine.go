@@ -566,7 +566,7 @@ func (engine *TcpEngin) BroadCast(msg IMessage) {
 }
 
 func NewTcpEngine() ITcpEngin {
-	return &TcpEngin{
+	engine := &TcpEngin{
 		clients:           map[ITcpClient]struct{}{},
 		handlerMap:        map[uint32]func(ITcpClient, IMessage){},
 		running:           true,
@@ -581,4 +581,11 @@ func NewTcpEngine() ITcpEngin {
 		sockSendBlockTime: _conf_sock_send_block_time,
 		sockKeepaliveTime: _conf_sock_keepalive_time,
 	}
+
+	cipher := NewCipherGzip(0)
+	engine.HandleNewCipher(func() ICipher {
+		return cipher
+	})
+
+	return engine
 }

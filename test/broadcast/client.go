@@ -10,7 +10,16 @@ const (
 )
 
 func onBroadcast(client net.ITcpClient, msg net.IMessage) {
-	log.Debug("client onBroadcast recv from %v: %v", client.Conn().RemoteAddr().String(), string(msg.Body()))
+	str := "aaaaaaaaaa"
+	for j := 0; j < 256; j++ {
+		str += "aaaaaaaaaa"
+	}
+	if str == string(msg.Body()) {
+		log.Debug("client onBroadcast recv from %v: %v", client.Conn().RemoteAddr().String(), "aaaaaa")
+	} else {
+		log.Debug("client onBroadcast recv from %v: %v", client.Conn().RemoteAddr().String(), string(msg.Body()))
+	}
+
 }
 
 func runClient() {
@@ -24,7 +33,10 @@ func runClient() {
 	)
 
 	netengine.Handle(CMD_BROAD, onBroadcast)
-
+	cipher = net.NewCipherGzip(0)
+	netengine.HandleNewCipher(func() net.ICipher {
+		return cipher
+	})
 	client, err = net.NewTcpClient(addr, netengine, cipher, autoReconn, nil)
 	if err != nil {
 		log.Debug("NewTcpClient failed: %v, %v", client, err)

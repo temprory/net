@@ -304,6 +304,11 @@ func NewTcpServer(tag string) ITcpServer {
 		tag: tag,
 	}
 
+	cipher := NewCipherGzip(0)
+	server.HandleNewCipher(func() ICipher {
+		return cipher
+	})
+
 	server.HandleDisconnected(server.deleClient)
 
 	return server

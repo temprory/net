@@ -23,16 +23,17 @@ const (
 	_ext_idx_begin int = 8
 	_ext_idx_end   int = 16
 
-	CmdPing           = uint32(0xFFFFFFFF)
-	CmdSetReaIp       = uint32(0xFFFFFFFE)
-	CmdRpcMethod      = uint32(0xFFFFFFFD)
-	CmdRpcMethodError = uint32(0xFFFFFFFC)
-	CmdUserMax        = CmdPing - 10240
+	CmdFlagMaskGzip   = uint32(1) << 31
+	CmdPing           = uint32(0x1 << 24)
+	CmdSetReaIp       = uint32(0x1<<24 + 1)
+	CmdRpcMethod      = uint32(0x1<<24 + 2)
+	CmdRpcMethodError = uint32(0x1<<24 + 3)
+	CmdUserMax        = 0xFFFFFF
 )
 
 type IMessage interface {
-	HeadLen() uint32
-	BodyLen() uint32
+	HeadLen() int
+	BodyLen() int
 
 	Cmd() uint32
 	SetCmd(cmd uint32)
@@ -61,12 +62,12 @@ type Message struct {
 	rawData []byte
 }
 
-func (msg *Message) HeadLen() uint32 {
-	return uint32(_message_head_len)
+func (msg *Message) HeadLen() int {
+	return _message_head_len
 }
 
-func (msg *Message) BodyLen() uint32 {
-	return uint32(binary.LittleEndian.Uint32(msg.data[_bodylen_idx_begin:_bodylen_idx_end]))
+func (msg *Message) BodyLen() int {
+	return int(binary.LittleEndian.Uint32(msg.data[_bodylen_idx_begin:_bodylen_idx_end]))
 }
 
 func (msg *Message) Cmd() uint32 {

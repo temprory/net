@@ -5,8 +5,12 @@ import (
 )
 
 var (
-	_conf_sock_nodelay         = true
-	_conf_sock_keepalive       = false
+	_conf_sock_nodelay   = true
+	_conf_sock_keepalive = false
+
+	_conf_gzip_enabled   = true
+	_conf_auto_gzip_size = 1024 - 16
+
 	_conf_sock_send_q_size     = 256
 	_conf_sock_recv_buf_len    = 1024
 	_conf_sock_send_buf_len    = 1024
