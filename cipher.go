@@ -11,7 +11,7 @@ type ICipher interface {
 }
 
 type CipherGzip struct {
-	gzipSize int
+	threshold int
 }
 
 func (cipher *CipherGzip) Init() {
@@ -19,7 +19,7 @@ func (cipher *CipherGzip) Init() {
 }
 
 func (cipher *CipherGzip) Encrypt(seq int64, key uint32, data []byte) []byte {
-	if len(data) <= cipher.gzipSize {
+	if len(data) <= cipher.threshold {
 		return data
 	}
 	body := gzipCompress(data[_message_head_len:])
@@ -44,9 +44,9 @@ func (cipher *CipherGzip) Decrypt(seq int64, key uint32, data []byte) ([]byte, e
 	return nil, err
 }
 
-func NewCipherGzip(gzipSize int) ICipher {
-	if gzipSize <= 0 {
-		gzipSize = 1024
+func NewCipherGzip(threshold int) ICipher {
+	if threshold <= 0 {
+		threshold = 1024
 	}
-	return &CipherGzip{gzipSize}
+	return &CipherGzip{threshold}
 }
