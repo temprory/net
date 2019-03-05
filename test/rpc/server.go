@@ -96,5 +96,5 @@ func main() {
 	server.HandleRpcMethod("MsgpackRpc.Hello", onMsgpackRpc, false)
 	server.HandleRpcMethod("ProtobufRpc.Hello", onProtobufRpc, false)
 
-	server.Serve(":8888", time.Second*5)
+	server.Serve("localhost:8888", time.Second*5)
 }

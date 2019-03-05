@@ -109,6 +109,7 @@ func NewRpcClient(addr string, engine ITcpEngin, onConnected func(ITcpClient)) (
 	if engine == nil {
 		engine = NewTcpEngine()
 	}
+	engine.SetSendQueueSize(_conf_sock_rpc_send_q_size)
 	engine.SetSockRecvBlockTime(_conf_sock_rpc_recv_block_time)
 	client, err := NewTcpClient(addr, engine, nil, true, onConnected)
 	if err != nil {
@@ -221,7 +222,7 @@ func (client *JsonRpcClient) CallMethodWithTimeout(method string, req interface{
 	return err
 }
 
-func NewJsonRpcClient(addr string, engine ITcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+func NewJsonRpcClient(addr string, engine ITcpEngin) (IRpcClient, error) {
 	c, err := NewRpcClient(addr, engine, nil)
 	if err != nil {
 		return nil, err
@@ -303,7 +304,7 @@ func (client *GobRpcClient) CallMethodWithTimeout(method string, req interface{}
 	return err
 }
 
-func NewGobRpcClient(addr string, engine ITcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+func NewGobRpcClient(addr string, engine ITcpEngin) (IRpcClient, error) {
 	c, err := NewRpcClient(addr, engine, nil)
 	if err != nil {
 		return nil, err
@@ -381,7 +382,7 @@ func (client *MsgpackRpcClient) CallMethodWithTimeout(method string, req interfa
 	return err
 }
 
-func NewMsgpackRpcClient(addr string, engine ITcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+func NewMsgpackRpcClient(addr string, engine ITcpEngin) (IRpcClient, error) {
 	c, err := NewRpcClient(addr, engine, nil)
 	if err != nil {
 		return nil, err
@@ -495,7 +496,7 @@ func (client *ProtobufRpcClient) CallMethodWithTimeout(method string, req interf
 	return err
 }
 
-func NewProtobufRpcClient(addr string, engine ITcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+func NewProtobufRpcClient(addr string, engine ITcpEngin) (IRpcClient, error) {
 	c, err := NewRpcClient(addr, engine, nil)
 	if err != nil {
 		return nil, err

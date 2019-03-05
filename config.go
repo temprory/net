@@ -20,5 +20,6 @@ var (
 	_conf_sock_recv_block_time = time.Second * 65
 	_conf_sock_send_block_time = time.Second * 5
 
+	_conf_sock_rpc_send_q_size     = 4096
 	_conf_sock_rpc_recv_block_time = time.Second * 3600 * 24
 )

@@ -16,6 +16,8 @@ import (
 )
 
 var (
+	qps  = int64(0)
+	addr = "localhost:8888"
 	json = jsoniter.ConfigCompatibleWithStandardLibrary
 )
 
@@ -29,7 +31,7 @@ var (
 
 	data        = []byte{}
 	clientNum   = int64(16)
-	loopNum     = int64(50000)
+	loopNum     = int64(500000)
 	totalReqNum = int64(0)
 )
 
@@ -87,7 +89,6 @@ type HelloReply struct {
 func startGobRpcCmdClient() {
 	defer wg.Done()
 
-	addr := "127.0.0.1:8888"
 	client, err := net.NewGobRpcClient(addr, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
@@ -103,13 +104,13 @@ func startGobRpcCmdClient() {
 		if rsp.Message != req.Name {
 			log.Debug("gobrpc cmd failed: %v, %v, %v", err, rsp.Message, req.Name)
 		}
+		atomic.AddInt64(&qps, 1)
 	}
 }
 
 func startGobRpcMethodClient() {
 	defer wg.Done()
 
-	addr := "127.0.0.1:8888"
 	client, err := net.NewGobRpcClient(addr, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
@@ -125,13 +126,13 @@ func startGobRpcMethodClient() {
 		if rsp.Message != req.Name {
 			log.Debug("gobrpc method failed: %v, %v, %v", err, rsp.Message, req.Name)
 		}
+		atomic.AddInt64(&qps, 1)
 	}
 }
 
 func startJsonRpcCmdClient() {
 	defer wg.Done()
 
-	addr := "127.0.0.1:8888"
 	client, err := net.NewJsonRpcClient(addr, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
@@ -147,13 +148,13 @@ func startJsonRpcCmdClient() {
 		if rsp.Message != req.Name {
 			log.Debug("jsonrpc cmd failed: %v", err)
 		}
+		atomic.AddInt64(&qps, 1)
 	}
 }
 
 func startJsonRpcMethodClient() {
 	defer wg.Done()
 
-	addr := "127.0.0.1:8888"
 	client, err := net.NewJsonRpcClient(addr, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
@@ -169,13 +170,13 @@ func startJsonRpcMethodClient() {
 		if rsp.Message != req.Name {
 			log.Debug("jsonrpc method failed: %v", err)
 		}
+		atomic.AddInt64(&qps, 1)
 	}
 }
 
 func startMsgpackRpcCmdClient() {
 	defer wg.Done()
 
-	addr := "127.0.0.1:8888"
 	client, err := net.NewMsgpackRpcClient(addr, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
@@ -191,13 +192,13 @@ func startMsgpackRpcCmdClient() {
 		if rsp.Message != req.Name {
 			log.Debug("msgpackrpc cmd failed: %v", err)
 		}
+		atomic.AddInt64(&qps, 1)
 	}
 }
 
 func startMsgpackRpcMethodClient() {
 	defer wg.Done()
 
-	addr := "127.0.0.1:8888"
 	client, err := net.NewMsgpackRpcClient(addr, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
@@ -213,13 +214,13 @@ func startMsgpackRpcMethodClient() {
 		if rsp.Message != req.Name {
 			log.Debug("msgpackrpc mechod failed: %v", err)
 		}
+		atomic.AddInt64(&qps, 1)
 	}
 }
 
 func startProtobufRpcCmdClient() {
 	defer wg.Done()
 
-	addr := "127.0.0.1:8888"
 	client, err := net.NewProtobufRpcClient(addr, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
@@ -235,13 +236,13 @@ func startProtobufRpcCmdClient() {
 		if rsp.Message != req.Name {
 			log.Debug("protobufrpc cmd failed: %v", err)
 		}
+		atomic.AddInt64(&qps, 1)
 	}
 }
 
 func startProtobufRpcMethodClient() {
 	defer wg.Done()
 
-	addr := "127.0.0.1:8888"
 	client, err := net.NewProtobufRpcClient(addr, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
@@ -257,6 +258,7 @@ func startProtobufRpcMethodClient() {
 		if rsp.Message != req.Name {
 			log.Debug("protobufrpc mechod failed: %v", err)
 		}
+		atomic.AddInt64(&qps, 1)
 	}
 }
 
@@ -272,17 +274,22 @@ func main() {
 		{
 			// wg.Add(1)
 			// go startMsgpackRpcCmdClient()
-			wg.Add(1)
-			go startMsgpackRpcMethodClient()
+			// wg.Add(1)
+			// go startMsgpackRpcMethodClient()
 		}
 		{
 			// wg.Add(1)
 			// go startProtobufRpcCmdClient()
-			// wg.Add(1)
-			// go startProtobufRpcMethodClient()
+			wg.Add(1)
+			go startProtobufRpcMethodClient()
 		}
 	}
-
+	go func() {
+		for {
+			time.Sleep(time.Second)
+			fmt.Println("qps: ", atomic.SwapInt64(&qps, 0))
+		}
+	}()
 	wg.Wait()
 	seconds := time.Since(t0).Seconds()
 	log.Debug("total used: %v, request: %d, %d / s", seconds, totalReqNum, int(float64(totalReqNum)/seconds))
