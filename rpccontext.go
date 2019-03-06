@@ -16,6 +16,7 @@ var (
 )
 
 type RpcContext struct {
+	method  string
 	client  ITcpClient
 	message IMessage
 }

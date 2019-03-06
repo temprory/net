@@ -418,12 +418,12 @@ func (engine *TcpEngin) HandleRpcCmd(cmd uint32, handler func(ctx *RpcContext), 
 	if async {
 		engine.handlerMap[cmd] = func(client ITcpClient, msg IMessage) {
 			safeGo(func() {
-				handler(&RpcContext{client, msg})
+				handler(&RpcContext{client: client, message: msg})
 			})
 		}
 	} else {
 		engine.handlerMap[cmd] = func(client ITcpClient, msg IMessage) {
-			handler(&RpcContext{client, msg})
+			handler(&RpcContext{client: client, message: msg})
 		}
 	}
 }
@@ -447,7 +447,7 @@ func (engine *TcpEngin) onRpcMethod(client ITcpClient, msg IMessage) {
 	}
 	rawmsg := msg.(*Message)
 	rawmsg.data = rawmsg.data[:(len(rawmsg.data) - 1 - methodLen)]
-	handler(&RpcContext{client, msg})
+	handler(&RpcContext{method: method, client: client, message: msg})
 }
 
 func (engine *TcpEngin) initRpcHandler() {
