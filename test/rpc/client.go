@@ -100,6 +100,7 @@ func startGobRpcCmdClient() {
 		err := client.CallCmdWithTimeout(CMD_GOB_RPC, req, rsp, time.Second*3)
 		if err != nil {
 			log.Debug("gobrpc cmd failed: %v", err)
+			continue
 		}
 		if rsp.Message != req.Name {
 			log.Debug("gobrpc cmd failed: %v, %v, %v", err, rsp.Message, req.Name)
@@ -122,6 +123,7 @@ func startGobRpcMethodClient() {
 		err := client.CallMethodWithTimeout("GobRpc.Hello", req, rsp, time.Second*3)
 		if err != nil {
 			log.Debug("gobrpc method failed: %v", err)
+			continue
 		}
 		if rsp.Message != req.Name {
 			log.Debug("gobrpc method failed: %v, %v, %v", err, rsp.Message, req.Name)
@@ -144,6 +146,7 @@ func startJsonRpcCmdClient() {
 		err := client.CallCmdWithTimeout(CMD_JSON_RPC, req, rsp, time.Second*3)
 		if err != nil {
 			log.Debug("jsonrpc cmd failed: %v", err)
+			continue
 		}
 		if rsp.Message != req.Name {
 			log.Debug("jsonrpc cmd failed: %v", err)
@@ -166,6 +169,7 @@ func startJsonRpcMethodClient() {
 		err := client.CallMethodWithTimeout("JsonRpc.Hello", req, rsp, time.Second*3)
 		if err != nil {
 			log.Debug("jsonrpc method failed: %v", err)
+			continue
 		}
 		if rsp.Message != req.Name {
 			log.Debug("jsonrpc method failed: %v", err)
@@ -188,6 +192,7 @@ func startMsgpackRpcCmdClient() {
 		err := client.CallCmdWithTimeout(CMD_MSGPACK_RPC, req, rsp, time.Second*3)
 		if err != nil {
 			log.Debug("msgpackrpc cmd failed: %v", err)
+			continue
 		}
 		if rsp.Message != req.Name {
 			log.Debug("msgpackrpc cmd failed: %v", err)
@@ -210,6 +215,7 @@ func startMsgpackRpcMethodClient() {
 		err := client.CallMethodWithTimeout("MsgpackRpc.Hello", req, rsp, time.Second*3)
 		if err != nil {
 			log.Debug("msgpackrpc mechod failed: %v", err)
+			continue
 		}
 		if rsp.Message != req.Name {
 			log.Debug("msgpackrpc mechod failed: %v", err)
@@ -232,6 +238,7 @@ func startProtobufRpcCmdClient() {
 		err := client.CallCmdWithTimeout(CMD_PROTOBUF_RPC, req, rsp, time.Second*3)
 		if err != nil {
 			log.Debug("protobufrpc cmd failed: %v", err)
+			continue
 		}
 		if rsp.Message != req.Name {
 			log.Debug("protobufrpc cmd failed: %v", err)
@@ -245,7 +252,7 @@ func startProtobufRpcMethodClient() {
 
 	client, err := net.NewProtobufRpcClient(addr, nil)
 	if err != nil {
-		log.Debug("NewReqClient Error: ", err)
+		log.Debug("NewReqClient Error: %v", err)
 	}
 	atomic.AddInt64(&totalReqNum, loopNum)
 	for i := int64(0); i < loopNum; i++ {
@@ -254,6 +261,7 @@ func startProtobufRpcMethodClient() {
 		err := client.CallMethodWithTimeout("ProtobufRpc.Hello", req, rsp, time.Second*3)
 		if err != nil {
 			log.Debug("protobufrpc mechod failed: %v", err)
+			continue
 		}
 		if rsp.Message != req.Name {
 			log.Debug("protobufrpc mechod failed: %v", err)

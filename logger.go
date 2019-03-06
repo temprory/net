@@ -1,11 +1,16 @@
 package net
 
 import (
+	//"fmt"
 	"github.com/temprory/log"
 )
 
 var (
 	logDebug = log.Debug
+	//  func(format string, v ...interface{}) {
+	// 	fmt.Fprintf(log.DefaultLogger.Writer, log.LogWithFormater(log.LEVEL_DEBUG, log.DefaultLogDepth, log.DefaultLogTimeLayout, format+"\n", v...))
+	// }
+
 	logInfo  = log.Info
 	logWarn  = log.Warn
 	logError = log.Error
