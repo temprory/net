@@ -29,6 +29,10 @@ func (ctx *RpcContext) Body() []byte {
 	return ctx.message.Body()
 }
 
+func (ctx *RpcContext) Method() string {
+	return ctx.method
+}
+
 func (ctx *RpcContext) Write(data []byte) error {
 	return ctx.client.sendDataSync(NewRpcMessage(ctx.message.Cmd(), ctx.message.RpcSeq(), data).data)
 }
