@@ -270,27 +270,49 @@ func startProtobufRpcMethodClient() {
 	}
 }
 
+func startRpcWithCodecMethodClient() {
+	defer wg.Done()
+
+	client, err := net.NewRpcClient(addr, nil, json)
+	if err != nil {
+		log.Debug("NewReqClient Error: ", err)
+	}
+	atomic.AddInt64(&totalReqNum, loopNum)
+	for i := int64(0); i < loopNum; i++ {
+		req := &HelloRequest{Name: fmt.Sprintf("hello_%d", i)}
+		rsp := &HelloReply{}
+		err := client.CallMethodWithTimeout("JsonRpc.Hello", req, rsp, time.Second*3)
+		if err != nil {
+			log.Debug("jsonrpc method failed: %v", err)
+			continue
+		}
+		if rsp.Message != req.Name {
+			log.Debug("jsonrpc method failed: %v", err)
+		}
+		atomic.AddInt64(&qps, 1)
+	}
+}
+
 func main() {
 	t0 := time.Now()
 	for i := int64(0); i < clientNum; i++ {
-		// {
 		// 	wg.Add(1)
 		// 	go startJsonRpcCmdClient()
-		// 	wg.Add(1)
-		// 	go startJsonRpcMethodClient()
-		// }
-		{
-			// wg.Add(1)
-			// go startMsgpackRpcCmdClient()
-			// wg.Add(1)
-			// go startMsgpackRpcMethodClient()
-		}
-		{
-			// wg.Add(1)
-			// go startProtobufRpcCmdClient()
-			wg.Add(1)
-			go startProtobufRpcMethodClient()
-		}
+		// wg.Add(1)
+		// go startJsonRpcMethodClient()
+
+		// wg.Add(1)
+		// go startMsgpackRpcCmdClient()
+		// wg.Add(1)
+		// go startMsgpackRpcMethodClient()
+
+		// wg.Add(1)
+		// go startProtobufRpcCmdClient()
+		// wg.Add(1)
+		// go startProtobufRpcMethodClient()
+
+		wg.Add(1)
+		go startRpcWithCodecMethodClient()
 	}
 	go func() {
 		for {
