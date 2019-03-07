@@ -14,6 +14,8 @@ var (
 	ErrRpcCallTimeout           = errors.New("rpc call timeout")
 	ErrRpcCallClientError       = errors.New("rpc client error")
 
+	ErrorRpcInvalidPbMessage = errors.New("invalid pb Message")
+
 	ErrorBroadcastNotEnabled = errors.New("broadcast not enabled")
 
 	ErrorReservedCmdInternal       = fmt.Errorf("cmd > %d/0x%X is reserved for internal, plz use other number", CmdUserMax, CmdUserMax)

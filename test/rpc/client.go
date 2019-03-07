@@ -30,8 +30,8 @@ var (
 	wg = sync.WaitGroup{}
 
 	data        = []byte{}
-	clientNum   = int64(16)
-	loopNum     = int64(500000)
+	clientNum   = int64(18 / 9)
+	loopNum     = int64(10000)
 	totalReqNum = int64(0)
 )
 
@@ -89,7 +89,7 @@ type HelloReply struct {
 func startGobRpcCmdClient() {
 	defer wg.Done()
 
-	client, err := net.NewGobRpcClient(addr, nil)
+	client, err := net.NewGobRpcClient(addr, nil, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
 	}
@@ -112,7 +112,7 @@ func startGobRpcCmdClient() {
 func startGobRpcMethodClient() {
 	defer wg.Done()
 
-	client, err := net.NewGobRpcClient(addr, nil)
+	client, err := net.NewGobRpcClient(addr, nil, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
 	}
@@ -135,7 +135,7 @@ func startGobRpcMethodClient() {
 func startJsonRpcCmdClient() {
 	defer wg.Done()
 
-	client, err := net.NewJsonRpcClient(addr, nil)
+	client, err := net.NewJsonRpcClient(addr, nil, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
 	}
@@ -158,7 +158,7 @@ func startJsonRpcCmdClient() {
 func startJsonRpcMethodClient() {
 	defer wg.Done()
 
-	client, err := net.NewJsonRpcClient(addr, nil)
+	client, err := net.NewJsonRpcClient(addr, nil, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
 	}
@@ -181,7 +181,7 @@ func startJsonRpcMethodClient() {
 func startMsgpackRpcCmdClient() {
 	defer wg.Done()
 
-	client, err := net.NewMsgpackRpcClient(addr, nil)
+	client, err := net.NewMsgpackRpcClient(addr, nil, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
 	}
@@ -204,7 +204,7 @@ func startMsgpackRpcCmdClient() {
 func startMsgpackRpcMethodClient() {
 	defer wg.Done()
 
-	client, err := net.NewMsgpackRpcClient(addr, nil)
+	client, err := net.NewMsgpackRpcClient(addr, nil, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
 	}
@@ -227,7 +227,7 @@ func startMsgpackRpcMethodClient() {
 func startProtobufRpcCmdClient() {
 	defer wg.Done()
 
-	client, err := net.NewProtobufRpcClient(addr, nil)
+	client, err := net.NewProtobufRpcClient(addr, nil, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
 	}
@@ -250,7 +250,7 @@ func startProtobufRpcCmdClient() {
 func startProtobufRpcMethodClient() {
 	defer wg.Done()
 
-	client, err := net.NewProtobufRpcClient(addr, nil)
+	client, err := net.NewProtobufRpcClient(addr, nil, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: %v", err)
 	}
@@ -273,7 +273,7 @@ func startProtobufRpcMethodClient() {
 func startRpcWithCodecMethodClient() {
 	defer wg.Done()
 
-	client, err := net.NewRpcClient(addr, nil, json)
+	client, err := net.NewRpcClient(addr, nil, json, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
 	}
@@ -296,20 +296,25 @@ func startRpcWithCodecMethodClient() {
 func main() {
 	t0 := time.Now()
 	for i := int64(0); i < clientNum; i++ {
-		// 	wg.Add(1)
-		// 	go startJsonRpcCmdClient()
-		// wg.Add(1)
-		// go startJsonRpcMethodClient()
+		wg.Add(1)
+		go startGobRpcCmdClient()
+		wg.Add(1)
+		go startGobRpcMethodClient()
 
-		// wg.Add(1)
-		// go startMsgpackRpcCmdClient()
-		// wg.Add(1)
-		// go startMsgpackRpcMethodClient()
+		wg.Add(1)
+		go startJsonRpcCmdClient()
+		wg.Add(1)
+		go startJsonRpcMethodClient()
 
-		// wg.Add(1)
-		// go startProtobufRpcCmdClient()
-		// wg.Add(1)
-		// go startProtobufRpcMethodClient()
+		wg.Add(1)
+		go startMsgpackRpcCmdClient()
+		wg.Add(1)
+		go startMsgpackRpcMethodClient()
+
+		wg.Add(1)
+		go startProtobufRpcCmdClient()
+		wg.Add(1)
+		go startProtobufRpcMethodClient()
 
 		wg.Add(1)
 		go startRpcWithCodecMethodClient()
