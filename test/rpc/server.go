@@ -32,6 +32,7 @@ func onGobRpc(ctx *net.RpcContext) {
 	req := &HelloRequest{}
 	err := ctx.BindGob(req)
 	if err != nil {
+		ctx.Error("invalid data")
 		log.Error("onGobRpc failed: %v", err)
 		return
 	}
@@ -46,6 +47,7 @@ func onJsonRpc(ctx *net.RpcContext) {
 	req := &HelloRequest{}
 	err := ctx.BindJson(req)
 	if err != nil {
+		ctx.Error("invalid data")
 		log.Error("onJsonRpc failed: %v", err)
 		return
 	}
@@ -60,12 +62,14 @@ func onMsgpackRpc(ctx *net.RpcContext) {
 	req := &HelloRequest{}
 	err := ctx.BindMsgpack(req)
 	if err != nil {
+		ctx.Error("invalid data")
 		log.Error("onMsgpackRpc failed: %v", err)
 		return
 	}
 	//log.Info("-- onMsgpackRpc: %v", req.Name)
 	err = ctx.WriteMsgpack(&HelloReply{Message: req.Name})
 	if err != nil {
+
 		log.Error("onMsgpackRpc failed: %v", err)
 	}
 }
@@ -74,6 +78,7 @@ func onProtobufRpc(ctx *net.RpcContext) {
 	req := &pb.HelloRequest{}
 	err := ctx.BindProtobuf(req)
 	if err != nil {
+		ctx.Error("invalid data")
 		log.Error("onProtobufRpc failed: %v", err)
 		return
 	}

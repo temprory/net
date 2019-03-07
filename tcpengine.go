@@ -340,7 +340,7 @@ func (engine *TcpEngin) OnMessage(client ITcpClient, msg IMessage) {
 		case CmdPing:
 		case CmdSetReaIp:
 		case CmdRpcMethod:
-		case CmdRpcMethodError:
+		case CmdRpcError:
 		default:
 			logDebug("engine is not running, ignore cmd %X, ip: %v", msg.Cmd(), client.Ip())
 			return
@@ -383,8 +383,8 @@ func (engine *TcpEngin) Handle(cmd uint32, handler func(client ITcpClient, msg I
 	if cmd == CmdRpcMethod {
 		panic(ErrorReservedCmdRpcMethod)
 	}
-	if cmd == CmdRpcMethodError {
-		panic(ErrorReservedCmdRpcMethodError)
+	if cmd == CmdRpcError {
+		panic(ErrorReservedCmdRpcError)
 	}
 	if cmd > CmdUserMax {
 		panic(ErrorReservedCmdInternal)
@@ -406,8 +406,8 @@ func (engine *TcpEngin) HandleRpcCmd(cmd uint32, handler func(ctx *RpcContext), 
 	if cmd == CmdRpcMethod {
 		panic(ErrorReservedCmdRpcMethod)
 	}
-	if cmd == CmdRpcMethodError {
-		panic(ErrorReservedCmdRpcMethodError)
+	if cmd == CmdRpcError {
+		panic(ErrorReservedCmdRpcError)
 	}
 	if cmd > CmdUserMax {
 		panic(ErrorReservedCmdInternal)
@@ -431,18 +431,18 @@ func (engine *TcpEngin) HandleRpcCmd(cmd uint32, handler func(ctx *RpcContext), 
 func (engine *TcpEngin) onRpcMethod(client ITcpClient, msg IMessage) {
 	data := msg.Body()
 	if len(data) < 2 {
-		client.SendMsg(NewRpcMessage(CmdRpcMethodError, msg.RpcSeq(), []byte("invalid rpc payload")))
+		client.SendMsg(NewRpcMessage(CmdRpcError, msg.RpcSeq(), []byte("invalid rpc payload")))
 		return
 	}
 	methodLen := int(data[len(data)-1])
 	if methodLen <= 0 || methodLen > 128 || len(data)-1 < methodLen {
-		client.SendMsg(NewRpcMessage(CmdRpcMethodError, msg.RpcSeq(), []byte(fmt.Sprintf("invalid rpc method length %d, should between 0 and 128(not including 0 and 128)", methodLen))))
+		client.SendMsg(NewRpcMessage(CmdRpcError, msg.RpcSeq(), []byte(fmt.Sprintf("invalid rpc method length %d, should between 0 and 128(not including 0 and 128)", methodLen))))
 		return
 	}
 	method := string(data[(len(data) - 1 - methodLen):(len(data) - 1)])
 	handler, ok := engine.rpcMethodHandlerMap[method]
 	if !ok {
-		client.SendMsg(NewRpcMessage(CmdRpcMethodError, msg.RpcSeq(), []byte(fmt.Sprintf("invalid rpc method %s", method))))
+		client.SendMsg(NewRpcMessage(CmdRpcError, msg.RpcSeq(), []byte(fmt.Sprintf("invalid rpc method %s", method))))
 		return
 	}
 	rawmsg := msg.(*Message)

@@ -88,3 +88,7 @@ func (ctx *RpcContext) WriteProtobuf(v proto.Message) error {
 	}
 	return ctx.client.sendDataSync(NewRpcMessage(ctx.message.Cmd(), ctx.message.RpcSeq(), data).data)
 }
+
+func (ctx *RpcContext) Error(errText string) {
+	ctx.client.sendDataSync(NewRpcMessage(CmdRpcError, ctx.message.RpcSeq(), []byte(errText)).data)
+}

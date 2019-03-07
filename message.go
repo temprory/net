@@ -23,12 +23,12 @@ const (
 	_ext_idx_begin int = 8
 	_ext_idx_end   int = 16
 
-	CmdFlagMaskGzip   = uint32(1) << 31
-	CmdPing           = uint32(0x1 << 24)
-	CmdSetReaIp       = uint32(0x1<<24 + 1)
-	CmdRpcMethod      = uint32(0x1<<24 + 2)
-	CmdRpcMethodError = uint32(0x1<<24 + 3)
-	CmdUserMax        = 0xFFFFFF
+	CmdFlagMaskGzip = uint32(1) << 31
+	CmdPing         = uint32(0x1 << 24)
+	CmdSetReaIp     = uint32(0x1<<24 + 1)
+	CmdRpcMethod    = uint32(0x1<<24 + 2)
+	CmdRpcError     = uint32(0x1<<24 + 3)
+	CmdUserMax      = 0xFFFFFF
 )
 
 type IMessage interface {
