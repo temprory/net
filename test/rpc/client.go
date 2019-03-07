@@ -304,7 +304,7 @@ func startRpcWithDefaultCodecMethodClient() {
 	for i := int64(0); i < loopNum; i++ {
 		req := &HelloRequest{Name: fmt.Sprintf("hello_%d", i)}
 		rsp := &HelloReply{}
-		err := client.CallMethodWithTimeout("JsonRpc.Hello", req, rsp, time.Second*3)
+		err := client.CallMethodWithTimeout("MsgpackRpc.Hello", req, rsp, time.Second*3)
 		if err != nil {
 			log.Debug("default codec msgpack method failed: %v", err)
 			continue

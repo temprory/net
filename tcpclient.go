@@ -416,6 +416,9 @@ func (client *TcpClient) reader() {
 }
 
 func createTcpClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient {
+	if parent == nil {
+		parent = NewTcpEngine()
+	}
 	sendQsize := parent.SendQueueSize()
 	if sendQsize <= 0 {
 		sendQsize = _conf_sock_send_q_size
