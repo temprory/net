@@ -8,6 +8,7 @@ import (
 
 type IRpcClient interface {
 	ITcpClient
+	Codec() IRpcCodec
 	CallCmd(cmd uint32, req interface{}, rsp interface{}) error
 	CallCmdWithTimeout(cmd uint32, req interface{}, rsp interface{}, timeout time.Duration) error
 	CallMethod(method string, req interface{}, rsp interface{}) error
@@ -97,6 +98,10 @@ func (client *RpcClient) callCmdWithTimeout(cmd uint32, data []byte, timeout tim
 	return nil, ErrRpcCallClientError
 }
 
+func (client *RpcClient) Codec() IRpcCodec {
+	return client.codec
+}
+
 func (client *RpcClient) CallCmd(cmd uint32, req interface{}, rsp interface{}) error {
 	data, err := client.codec.Marshal(req)
 	if err != nil {
@@ -176,6 +181,11 @@ func NewRpcClient(addr string, engine ITcpEngin, codec IRpcCodec, onConnected fu
 	safeGo(func() {
 		client.Keepalive(_conf_sock_keepalive_time)
 	})
+
+	if codec == nil {
+		codec = DefaultRpcCodec
+		logDebug("use default rpc codec: %v", defaultRpcCodecType)
+	}
 	rpcclient := &RpcClient{client, map[int64]*rpcsession{}, codec}
 	rpcclient.OnClose("-", func(ITcpClient) {
 		rpcclient.Lock()

@@ -30,7 +30,7 @@ var (
 	wg = sync.WaitGroup{}
 
 	data        = []byte{}
-	clientNum   = int64(18 / 9)
+	clientNum   = int64(20 / 10)
 	loopNum     = int64(10000)
 	totalReqNum = int64(0)
 )
@@ -293,6 +293,29 @@ func startRpcWithCodecMethodClient() {
 	}
 }
 
+func startRpcWithDefaultCodecMethodClient() {
+	defer wg.Done()
+
+	client, err := net.NewRpcClient(addr, nil, nil, nil)
+	if err != nil {
+		log.Debug("NewReqClient Error: ", err)
+	}
+	atomic.AddInt64(&totalReqNum, loopNum)
+	for i := int64(0); i < loopNum; i++ {
+		req := &HelloRequest{Name: fmt.Sprintf("hello_%d", i)}
+		rsp := &HelloReply{}
+		err := client.CallMethodWithTimeout("JsonRpc.Hello", req, rsp, time.Second*3)
+		if err != nil {
+			log.Debug("default codec msgpack method failed: %v", err)
+			continue
+		}
+		if rsp.Message != req.Name {
+			log.Debug("default codec msgpack method failed: %v", err)
+		}
+		atomic.AddInt64(&qps, 1)
+	}
+}
+
 func main() {
 	t0 := time.Now()
 	for i := int64(0); i < clientNum; i++ {
@@ -318,6 +341,8 @@ func main() {
 
 		wg.Add(1)
 		go startRpcWithCodecMethodClient()
+		wg.Add(1)
+		go startRpcWithDefaultCodecMethodClient()
 	}
 	go func() {
 		for {

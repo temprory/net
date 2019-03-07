@@ -7,6 +7,11 @@ import (
 	"github.com/vmihailenco/msgpack"
 )
 
+var (
+	defaultRpcCodecType = "msgpack"
+	DefaultRpcCodec     = &RpcCodecMsgpack{}
+)
+
 type IRpcCodec interface {
 	Marshal(v interface{}) ([]byte, error)
 	Unmarshal(data []byte, v interface{}) error
