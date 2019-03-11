@@ -33,7 +33,8 @@ func (ctx *RpcContext) Method() string {
 	return ctx.method
 }
 
-func (ctx *RpcContext) Write(data []byte) error {
+func (ctx *RpcContext) WriteData(data []byte) error {
+
 	return ctx.client.sendDataSync(NewRpcMessage(ctx.message.Cmd(), ctx.message.RpcSeq(), data).data)
 }
 
@@ -42,6 +43,18 @@ func (ctx *RpcContext) WriteMsg(msg IMessage) error {
 		msg.SetRpcSeq(ctx.message.RpcSeq())
 	}
 	return ctx.client.sendDataSync(msg.Data())
+}
+
+func (ctx *RpcContext) Bind(v interface{}) error {
+	return DefaultRpcCodec.Unmarshal(ctx.Body(), v)
+}
+
+func (ctx *RpcContext) Write(v interface{}) error {
+	data, err := DefaultRpcCodec.Marshal(v)
+	if err != nil {
+		return err
+	}
+	return ctx.client.sendDataSync(NewRpcMessage(ctx.message.Cmd(), ctx.message.RpcSeq(), data).data)
 }
 
 func (ctx *RpcContext) BindJson(v interface{}) error {

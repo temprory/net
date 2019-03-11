@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	defaultRpcCodecType = "msgpack"
-	DefaultRpcCodec     = &RpcCodecMsgpack{}
+	defaultRpcCodecType = "json"
+	DefaultRpcCodec     = &RpcCodecJson{}
 )
 
 type IRpcCodec interface {
