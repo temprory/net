@@ -435,8 +435,8 @@ func (engine *TcpEngin) onRpcMethod(client ITcpClient, msg IMessage) {
 		return
 	}
 	methodLen := int(data[len(data)-1])
-	if methodLen <= 0 || methodLen > 128 || len(data)-1 < methodLen {
-		client.SendMsg(NewRpcMessage(CmdRpcError, msg.RpcSeq(), []byte(fmt.Sprintf("invalid rpc method length %d, should between 0 and 128(not including 0 and 128)", methodLen))))
+	if methodLen <= 0 || methodLen >= 128 || len(data)-1 < methodLen {
+		client.SendMsg(NewRpcMessage(CmdRpcError, msg.RpcSeq(), []byte(fmt.Sprintf("invalid rpc method length %d, should be (1-127)", methodLen))))
 		return
 	}
 	method := string(data[(len(data) - 1 - methodLen):(len(data) - 1)])
