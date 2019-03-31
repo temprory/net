@@ -21,6 +21,10 @@ type RpcContext struct {
 	message IMessage
 }
 
+func (ctx *RpcContext) Client() ITcpClient {
+	return ctx.client
+}
+
 func (ctx *RpcContext) Cmd() uint32 {
 	return ctx.message.Cmd()
 }

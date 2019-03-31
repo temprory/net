@@ -55,20 +55,30 @@ func NewRpcClientPool(addr string, engine ITcpEngin, codec IRpcCodec, poolSize i
 	clients := map[ITcpClient]*RpcClient{}
 	engine.HandleOnMessage(func(c ITcpClient, msg IMessage) {
 		//if engine.running {
-		rpcclient := clients[c]
-		rpcclient.Lock()
-		session, ok := rpcclient.sessionMap[msg.RpcSeq()]
-		rpcclient.Unlock()
-		if ok {
-			if msg.Cmd() == CmdRpcError {
-				session.done <- &RpcMessage{msg, errors.New(string(msg.Body()))}
-			} else {
+		switch msg.Cmd() {
+		case CmdPing:
+		case CmdRpcMethod:
+			rpcclient := clients[c]
+			rpcclient.Lock()
+			session, ok := rpcclient.sessionMap[msg.RpcSeq()]
+			rpcclient.Unlock()
+			if ok {
 				session.done <- &RpcMessage{msg, nil}
-			}
-		} else {
-			if msg.Cmd() != CmdPing {
+			} else {
 				logDebug("no rpcsession waiting for rpc response, cmd %X, ip: %v", msg.Cmd(), c.Ip())
 			}
+		case CmdRpcError:
+			rpcclient := clients[c]
+			rpcclient.Lock()
+			session, ok := rpcclient.sessionMap[msg.RpcSeq()]
+			rpcclient.Unlock()
+			if ok {
+				session.done <- &RpcMessage{msg, errors.New(string(msg.Body()))}
+			} else {
+				logDebug("no rpcsession waiting for rpc response, cmd %X, ip: %v", msg.Cmd(), c.Ip())
+			}
+		default:
+			logDebug("no handler for cmd %d", msg.Cmd())
 		}
 		// } else {
 		// 	logDebug("engine is not running, ignore rpc cmd %X, ip: %v", msg.Cmd(), client.Ip())

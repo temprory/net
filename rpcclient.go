@@ -198,19 +198,28 @@ func NewRpcClient(addr string, engine ITcpEngin, codec IRpcCodec, onConnected fu
 
 	engine.HandleOnMessage(func(c ITcpClient, msg IMessage) {
 		//if engine.running {
-		rpcclient.Lock()
-		session, ok := rpcclient.sessionMap[msg.RpcSeq()]
-		rpcclient.Unlock()
-		if ok {
-			if msg.Cmd() == CmdRpcError {
+		switch msg.Cmd() {
+		case CmdPing:
+		case CmdRpcMethod:
+			rpcclient.Lock()
+			session, ok := rpcclient.sessionMap[msg.RpcSeq()]
+			rpcclient.Unlock()
+			if ok {
+				session.done <- &RpcMessage{msg, nil}
+			} else {
+				logDebug("no rpcsession waiting for rpc response, cmd %X, ip: %v", msg.Cmd(), c.Ip())
+			}
+		case CmdRpcError:
+			rpcclient.Lock()
+			session, ok := rpcclient.sessionMap[msg.RpcSeq()]
+			rpcclient.Unlock()
+			if ok {
 				session.done <- &RpcMessage{msg, errors.New(string(msg.Body()))}
 			} else {
-				session.done <- &RpcMessage{msg, nil}
+				logDebug("no rpcsession waiting for rpc response, cmd %X, ip: %v", msg.Cmd(), c.Ip())
 			}
-		} else {
-			if msg.Cmd() != CmdPing {
-				logDebug("no rpcsession waiting for rpc response, cmd %X, ip: %v", msg.Cmd(), client.Ip())
-			}
+		default:
+			logDebug("no handler for cmd %d", msg.Cmd())
 		}
 		// } else {
 		// 	logDebug("engine is not running, ignore rpc cmd %X, ip: %v", msg.Cmd(), client.Ip())
@@ -220,21 +229,21 @@ func NewRpcClient(addr string, engine ITcpEngin, codec IRpcCodec, onConnected fu
 	return rpcclient, nil
 }
 
-func NewGobRpcClient(addr string, engine ITcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+func NewGobRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
 	c, err := NewRpcClient(addr, engine, &RpcCodecGob{}, onConnected)
 	return c, err
 }
 
-func NewJsonRpcClient(addr string, engine ITcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+func NewJsonRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
 	c, err := NewRpcClient(addr, engine, &RpcCodecJson{}, onConnected)
 	return c, err
 }
 
-func NewMsgpackRpcClient(addr string, engine ITcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+func NewMsgpackRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
 	c, err := NewRpcClient(addr, engine, &RpcCodecMsgpack{}, onConnected)
 	return c, err
 }
 
-func NewProtobufRpcClient(addr string, engine ITcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+func NewProtobufRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
 	return NewRpcClient(addr, engine, &RpcCodecProtobuf{}, onConnected)
 }
