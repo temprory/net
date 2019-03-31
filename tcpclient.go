@@ -32,8 +32,8 @@ type ITcpClient interface {
 
 	// SendMsgSync(msg IMessage) error
 	// SendMsgSyncWithoutLock(msg IMessage) error
-	sendDataSync(data []byte) error
-	// sendDataSyncWithoutLock(data []byte) error
+	pushDataSync(data []byte) error
+	// pushDataSyncWithoutLock(data []byte) error
 
 	RecvSeq() int64
 	SendSeq() int64
@@ -241,7 +241,7 @@ func (client *TcpClient) SendDataWithCallback(data []byte, cb func(ITcpClient, e
 	return err
 }
 
-func (client *TcpClient) sendDataSync(data []byte) error {
+func (client *TcpClient) pushDataSync(data []byte) error {
 	defer handlePanic()
 	var err error = nil
 	client.Lock()
@@ -252,7 +252,7 @@ func (client *TcpClient) sendDataSync(data []byte) error {
 	}
 	client.Unlock()
 	if err != nil {
-		logDebug("sendDataSync -> %v failed: %v", client.Ip(), err)
+		logDebug("pushDataSync -> %v failed: %v", client.Ip(), err)
 	}
 
 	return err
