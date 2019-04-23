@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/temprory/log"
 	"github.com/temprory/net"
 	"time"
@@ -19,6 +20,7 @@ type HelloReply struct {
 }
 
 func onHello(ctx *net.RpcContext) {
+
 	req := &HelloRequest{}
 	err := ctx.Bind(req)
 	if err != nil {
@@ -28,6 +30,22 @@ func onHello(ctx *net.RpcContext) {
 	err = ctx.Write(&HelloReply{Message: req.Name})
 	if err != nil {
 		log.Error("onHello failed: %v", err)
+	}
+
+	if ctx.Client().UserData() == nil {
+		ctx.Client().SetUserData(true)
+		go func() {
+			i := 0
+			for {
+				i++
+				time.Sleep(time.Second)
+				if err := ctx.Client().SendMsg(net.NewMessage(8888, []byte(fmt.Sprintf("hello_%v", i)))); err != nil {
+					log.Info("client exit, stop hello loop")
+					return
+				}
+			}
+		}()
+
 	}
 }
 

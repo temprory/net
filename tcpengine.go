@@ -565,7 +565,7 @@ func (engine *TcpEngin) BroadCast(msg IMessage) {
 	}
 }
 
-func NewTcpEngine() ITcpEngin {
+func NewTcpEngine() *TcpEngin {
 	engine := &TcpEngin{
 		clients:           map[ITcpClient]struct{}{},
 		handlerMap:        map[uint32]func(ITcpClient, IMessage){},

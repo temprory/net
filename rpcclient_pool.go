@@ -17,40 +17,47 @@ func (pool *RpcClientPool) Codec() IRpcCodec {
 	return pool.codec
 }
 
-func (pool *RpcClientPool) CallCmd(cmd uint32, req interface{}, rsp interface{}) error {
+// func (pool *RpcClientPool) CallCmd(cmd uint32, req interface{}, rsp interface{}) error {
+// 	idx := atomic.AddInt64(&pool.idx, 1)
+// 	client := pool.clients[uint64(idx)%pool.size]
+// 	err := client.CallCmd(cmd, req, rsp)
+// 	return err
+// }
+
+// func (pool *RpcClientPool) CallCmdWithTimeout(cmd uint32, req interface{}, rsp interface{}, timeout time.Duration) error {
+// 	idx := atomic.AddInt64(&pool.idx, 1)
+// 	client := pool.clients[uint64(idx)%pool.size]
+// 	err := client.CallCmdWithTimeout(cmd, req, rsp, timeout)
+// 	return err
+// }
+
+// func (pool *RpcClientPool) CallMethod(method string, req interface{}, rsp interface{}) error {
+// 	idx := atomic.AddInt64(&pool.idx, 1)
+// 	client := pool.clients[uint64(idx)%pool.size]
+// 	err := client.CallMethod(method, req, rsp)
+// 	return err
+// }
+
+// func (pool *RpcClientPool) CallMethodWithTimeout(method string, req interface{}, rsp interface{}, timeout time.Duration) error {
+// 	idx := atomic.AddInt64(&pool.idx, 1)
+// 	client := pool.clients[uint64(idx)%pool.size]
+// 	err := client.CallMethodWithTimeout(method, req, rsp, timeout)
+// 	return err
+// }
+
+func (pool *RpcClientPool) Call(method string, req interface{}, rsp interface{}, timeout time.Duration) error {
 	idx := atomic.AddInt64(&pool.idx, 1)
 	client := pool.clients[uint64(idx)%pool.size]
-	err := client.CallCmd(cmd, req, rsp)
+	err := client.Call(method, req, rsp, timeout)
 	return err
 }
 
-func (pool *RpcClientPool) CallCmdWithTimeout(cmd uint32, req interface{}, rsp interface{}, timeout time.Duration) error {
-	idx := atomic.AddInt64(&pool.idx, 1)
-	client := pool.clients[uint64(idx)%pool.size]
-	err := client.CallCmdWithTimeout(cmd, req, rsp, timeout)
-	return err
-}
-
-func (pool *RpcClientPool) CallMethod(method string, req interface{}, rsp interface{}) error {
-	idx := atomic.AddInt64(&pool.idx, 1)
-	client := pool.clients[uint64(idx)%pool.size]
-	err := client.CallMethod(method, req, rsp)
-	return err
-}
-
-func (pool *RpcClientPool) CallMethodWithTimeout(method string, req interface{}, rsp interface{}, timeout time.Duration) error {
-	idx := atomic.AddInt64(&pool.idx, 1)
-	client := pool.clients[uint64(idx)%pool.size]
-	err := client.CallMethodWithTimeout(method, req, rsp, timeout)
-	return err
-}
-
-func NewRpcClientPool(addr string, engine ITcpEngin, codec IRpcCodec, poolSize int, onConnected func(ITcpClient)) (*RpcClientPool, error) {
+func NewRpcClientPool(addr string, engine *TcpEngin, codec IRpcCodec, poolSize int, onConnected func(ITcpClient)) (*RpcClientPool, error) {
 	if engine == nil {
 		engine = NewTcpEngine()
+		engine.SetSendQueueSize(_conf_sock_rpc_send_q_size)
+		engine.SetSockRecvBlockTime(_conf_sock_rpc_recv_block_time)
 	}
-	engine.SetSendQueueSize(_conf_sock_rpc_send_q_size)
-	engine.SetSockRecvBlockTime(_conf_sock_rpc_recv_block_time)
 
 	clients := map[ITcpClient]*RpcClient{}
 	engine.HandleOnMessage(func(c ITcpClient, msg IMessage) {
@@ -78,7 +85,14 @@ func NewRpcClientPool(addr string, engine ITcpEngin, codec IRpcCodec, poolSize i
 				logDebug("no rpcsession waiting for rpc response, cmd %X, ip: %v", msg.Cmd(), c.Ip())
 			}
 		default:
-			logDebug("no handler for cmd %d", msg.Cmd())
+			if handler, ok := engine.handlerMap[msg.Cmd()]; ok {
+				engine.Add(1)
+				defer engine.Done()
+				defer handlePanic()
+				handler(c, msg)
+			} else {
+				logDebug("no handler for cmd %d", msg.Cmd())
+			}
 		}
 		// } else {
 		// 	logDebug("engine is not running, ignore rpc cmd %X, ip: %v", msg.Cmd(), client.Ip())
