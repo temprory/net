@@ -177,7 +177,7 @@ func NewRpcClient(addr string, engine *TcpEngin, codec IRpcCodec, onConnected fu
 		engine.SetSockRecvBlockTime(_conf_sock_rpc_recv_block_time)
 	}
 
-	client, err := NewTcpClient(addr, engine, nil, true, onConnected)
+	client, err := NewTcpClient(addr, engine, NewCipherGzip(0), true, onConnected)
 	if err != nil {
 		return nil, err
 	}
@@ -228,7 +228,7 @@ func NewRpcClient(addr string, engine *TcpEngin, codec IRpcCodec, onConnected fu
 				defer handlePanic()
 				handler(c, msg)
 			} else {
-				logDebug("no handler for cmd %d", msg.Cmd())
+				logDebug("no handler for cmd 0x%X", msg.Cmd())
 			}
 		}
 		// } else {
@@ -239,25 +239,21 @@ func NewRpcClient(addr string, engine *TcpEngin, codec IRpcCodec, onConnected fu
 	return rpcclient, nil
 }
 
-func NewGobRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
-	logDebug("--- NewGobRpcClient 000: %v", engine == nil)
-	c, err := NewRpcClient(addr, engine, &RpcCodecGob{}, onConnected)
-	return c, err
-}
+// func NewGobRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+// 	c, err := NewRpcClient(addr, engine, &RpcCodecGob{}, onConnected)
+// 	return c, err
+// }
 
-func NewJsonRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
-	logDebug("--- NewJsonRpcClient 000: %v", engine == nil)
-	c, err := NewRpcClient(addr, engine, &RpcCodecJson{}, onConnected)
-	return c, err
-}
+// func NewJsonRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+// 	c, err := NewRpcClient(addr, engine, &RpcCodecJson{}, onConnected)
+// 	return c, err
+// }
 
-func NewMsgpackRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
-	logDebug("--- NewMsgpackRpcClient 000: %v", engine == nil)
-	c, err := NewRpcClient(addr, engine, &RpcCodecMsgpack{}, onConnected)
-	return c, err
-}
+// func NewMsgpackRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+// 	c, err := NewRpcClient(addr, engine, &RpcCodecMsgpack{}, onConnected)
+// 	return c, err
+// }
 
-func NewProtobufRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
-	logDebug("--- NewProtobufRpcClient 000: %v", engine == nil)
-	return NewRpcClient(addr, engine, &RpcCodecProtobuf{}, onConnected)
-}
+// func NewProtobufRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+// 	return NewRpcClient(addr, engine, &RpcCodecProtobuf{}, onConnected)
+// }

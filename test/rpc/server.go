@@ -20,7 +20,7 @@ type HelloReply struct {
 }
 
 func on666(client net.ITcpClient, msg net.IMessage) {
-	log.Info("on666: %v", string(msg.Body()))
+	log.Info("on666: %v, %v", msg.Cmd(), string(msg.Body()))
 	client.SendMsg(msg)
 }
 

@@ -364,7 +364,7 @@ func (engine *TcpEngin) OnMessage(client ITcpClient, msg IMessage) {
 		defer handlePanic()
 		handler(client, msg)
 	} else {
-		logDebug("no handler for cmd %d", cmd)
+		logDebug("no handler for cmd 0x%X", cmd)
 	}
 }
 

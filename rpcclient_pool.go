@@ -96,7 +96,7 @@ func NewRpcClientPool(addr string, engine *TcpEngin, codec IRpcCodec, poolSize i
 				defer handlePanic()
 				handler(c, msg)
 			} else {
-				logDebug("no handler for cmd %d", msg.Cmd())
+				logDebug("no handler for cmd 0x%X", msg.Cmd())
 			}
 		}
 		// } else {
@@ -116,7 +116,7 @@ func NewRpcClientPool(addr string, engine *TcpEngin, codec IRpcCodec, poolSize i
 	}
 
 	for i := 0; i < poolSize; i++ {
-		client, err := NewTcpClient(addr, engine, nil, true, onConnected)
+		client, err := NewTcpClient(addr, engine, NewCipherGzip(0), true, onConnected)
 		if err != nil {
 			return nil, err
 		}

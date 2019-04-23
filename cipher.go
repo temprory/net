@@ -41,6 +41,7 @@ func (cipher *CipherGzip) Decrypt(seq int64, key uint32, data []byte) ([]byte, e
 	if err == nil {
 		return append(data[:_message_head_len], body...), nil
 	}
+
 	return nil, err
 }
 

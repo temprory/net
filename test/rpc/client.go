@@ -19,18 +19,23 @@ type HelloReply struct {
 	Message string
 }
 
-func onHello(client net.ITcpClient, msg net.IMessage) {
-	log.Info("onHello: %v", string(msg.Body()))
+func on6666(client net.ITcpClient, msg net.IMessage) {
+	log.Info("on6666: %v", string(msg.Body()))
+}
+
+func on8888(client net.ITcpClient, msg net.IMessage) {
+	log.Info("on8888: %v", string(msg.Body()))
 }
 
 func main() {
-	poolSize := 3
+	poolSize := 5
 	engine := net.NewTcpEngine()
-	engine.Handle(6666, onHello)
-	engine.Handle(8888, onHello)
+
+	engine.Handle(6666, on6666)
+	engine.Handle(8888, on8888)
 	pool, err := net.NewRpcClientPool(addr, engine, nil, poolSize, nil)
 	if err != nil {
-		log.Debug("NewReqClient Error: ", err)
+		log.Error("NewReqClient Error: %v", err)
 		return
 	}
 
@@ -39,7 +44,7 @@ func main() {
 		for {
 			i++
 			time.Sleep(time.Second)
-			if err := pool.Client().SendMsg(net.NewMessage(6666, []byte(fmt.Sprintf("hello_666_%v", i)))); err != nil {
+			if err := pool.Client().SendMsg(net.NewMessage(6666, []byte(fmt.Sprintf("hello_%v", i)))); err != nil {
 				return
 			}
 		}
