@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/temprory/log"
 	"github.com/temprory/net"
 	"time"
@@ -23,23 +24,32 @@ func onHello(client net.ITcpClient, msg net.IMessage) {
 }
 
 func main() {
-	//log.DefaultLogger.FullPath = false
-	//client, err := net.NewRpcClient(addr, nil, nil, nil)
-	//log.DefaultLogger.AddFileIgnorePath("github.com")
-	poolSize := 10
+	poolSize := 3
 	engine := net.NewTcpEngine()
+	engine.Handle(6666, onHello)
 	engine.Handle(8888, onHello)
-	client, err := net.NewRpcClientPool(addr, engine, nil, poolSize, nil)
+	pool, err := net.NewRpcClientPool(addr, engine, nil, poolSize, nil)
 	if err != nil {
 		log.Debug("NewReqClient Error: ", err)
 		return
 	}
 
+	go func() {
+		i := 0
+		for {
+			i++
+			time.Sleep(time.Second)
+			if err := pool.Client().SendMsg(net.NewMessage(6666, []byte(fmt.Sprintf("hello_666_%v", i)))); err != nil {
+				return
+			}
+		}
+	}()
+
 	for {
 		req := &HelloRequest{Name: "temprory"}
 		rsp := &HelloReply{}
 
-		err = client.Call("Hello", req, rsp, time.Second*3)
+		err = pool.Call("Hello", req, rsp, time.Second*3)
 		if err != nil {
 			log.Error("Hello failed: %v", err)
 			return

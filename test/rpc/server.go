@@ -19,8 +19,12 @@ type HelloReply struct {
 	Message string
 }
 
-func onHello(ctx *net.RpcContext) {
+func on666(client net.ITcpClient, msg net.IMessage) {
+	log.Info("on666: %v", string(msg.Body()))
+	client.SendMsg(msg)
+}
 
+func onHello(ctx *net.RpcContext) {
 	req := &HelloRequest{}
 	err := ctx.Bind(req)
 	if err != nil {
@@ -45,12 +49,14 @@ func onHello(ctx *net.RpcContext) {
 				}
 			}
 		}()
-
 	}
 }
 
 func main() {
 	server := net.NewTcpServer("rpc")
+
+	//处理命令号
+	server.Handle(6666, on666)
 
 	//初始化路由
 	server.HandleRpcMethod("Hello", onHello, true)

@@ -45,6 +45,11 @@ func (pool *RpcClientPool) Codec() IRpcCodec {
 // 	return err
 // }
 
+func (pool *RpcClientPool) Client() *RpcClient {
+	idx := atomic.AddInt64(&pool.idx, 1)
+	return pool.clients[uint64(idx)%pool.size]
+}
+
 func (pool *RpcClientPool) Call(method string, req interface{}, rsp interface{}, timeout time.Duration) error {
 	idx := atomic.AddInt64(&pool.idx, 1)
 	client := pool.clients[uint64(idx)%pool.size]
