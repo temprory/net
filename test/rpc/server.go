@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	addr = "127.0.0.1:8888"
+	addr = "0.0.0.0:8888"
 
 	CMD_ECHO     = uint32(6666)
 	CMD_SVR_CALL = uint32(8888)
