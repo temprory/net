@@ -32,7 +32,7 @@ func Ping(addr string, to time.Duration) error {
 
 func handlePanic() interface{} {
 	if err := recover(); err != nil {
-		errstr := fmt.Sprintf("%sruntime error: %v\ntraceback:\n", separator, err)
+		errstr := fmt.Sprintf("\n%sruntime error: %v\ntraceback:\n", separator, err)
 
 		i := 2
 		for {
