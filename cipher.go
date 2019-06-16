@@ -19,7 +19,7 @@ func (cipher *CipherGzip) Init() {
 }
 
 func (cipher *CipherGzip) Encrypt(seq int64, key uint32, data []byte) []byte {
-	if len(data) <= cipher.threshold+_message_head_len {
+	if cipher.threshold < 0 || (len(data) <= cipher.threshold+_message_head_len) {
 		return data
 	}
 	body := gzipCompress(data[_message_head_len:])

@@ -9,7 +9,7 @@ import (
 var (
 	CMD_ECHO = uint32(1)
 
-	reqData = make([]byte, 0)
+	reqData = make([]byte, 2048)
 )
 
 func onEcho(client net.ITcpClient, msg net.IMessage) {
@@ -32,7 +32,7 @@ func main() {
 		err        error
 		addr       = "127.0.0.1:18200"
 		client     net.ITcpClient
-		cipher     net.ICipher = net.NewCipherGzip(0)
+		cipher     net.ICipher = net.NewCipherGzip(-1)
 		autoReconn             = true
 		netengine              = net.NewTcpEngine()
 	)

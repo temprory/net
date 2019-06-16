@@ -20,7 +20,11 @@ func onEcho(client net.ITcpClient, msg net.IMessage) {
 }
 
 func main() {
+	cipher := net.NewCipherGzip(-1)
 	server := net.NewTcpServer("echo")
 	server.Handle(CMD_ECHO, onEcho)
+	server.HandleNewCipher(func() net.ICipher {
+		return cipher
+	})
 	server.Serve(":8200", time.Second*5)
 }
