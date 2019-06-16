@@ -9,21 +9,21 @@ import (
 var (
 	CMD_ECHO = uint32(1)
 
-	reqData = make([]byte, 2048)
+	reqData = make([]byte, 10)
 )
 
-func onEcho(client net.ITcpClient, msg net.IMessage) {
-	log.Debug("client onEcho recv from %v: %v, %v", client.Conn().RemoteAddr().String(), string(reqData) == string(msg.Body()), len(msg.Body()))
+func onEcho(client *net.TcpClient, msg net.IMessage) {
+	log.Debug("client onEcho recv from %v: %v, %v, %v", client.Conn.RemoteAddr().String(), string(msg.Body()), string(reqData) == string(msg.Body()), len(msg.Body()))
 }
 
-func onConnected(client net.ITcpClient) {
+func onConnected(client *net.TcpClient) {
 	for i := 0; i < 20; i++ {
 		err := client.SendMsg(net.NewMessage(CMD_ECHO, reqData))
 		if err != nil {
 			break
 		}
 		time.Sleep(time.Second)
-		break
+		// break
 	}
 }
 
@@ -31,7 +31,7 @@ func main() {
 	var (
 		err        error
 		addr       = "127.0.0.1:18200"
-		client     net.ITcpClient
+		client     *net.TcpClient
 		cipher     net.ICipher = net.NewCipherGzip(-1)
 		autoReconn             = true
 		netengine              = net.NewTcpEngine()

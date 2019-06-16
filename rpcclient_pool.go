@@ -9,11 +9,11 @@ import (
 type RpcClientPool struct {
 	idx     int64
 	size    uint64
-	codec   IRpcCodec
+	codec   ICodec
 	clients []*RpcClient
 }
 
-func (pool *RpcClientPool) Codec() IRpcCodec {
+func (pool *RpcClientPool) Codec() ICodec {
 	return pool.codec
 }
 
@@ -57,15 +57,15 @@ func (pool *RpcClientPool) Call(method string, req interface{}, rsp interface{},
 	return err
 }
 
-func NewRpcClientPool(addr string, engine *TcpEngin, codec IRpcCodec, poolSize int, onConnected func(ITcpClient)) (*RpcClientPool, error) {
+func NewRpcClientPool(addr string, engine *TcpEngin, codec ICodec, poolSize int, onConnected func(*TcpClient)) (*RpcClientPool, error) {
 	if engine == nil {
 		engine = NewTcpEngine()
-		engine.SetSendQueueSize(_conf_sock_rpc_send_q_size)
-		engine.SetSockRecvBlockTime(_conf_sock_rpc_recv_block_time)
+		engine.SetSendQueueSize(DefaultSockRpcSendQSize)
+		engine.SetSockRecvBlockTime(DefaultSockRpcRecvBlockTime)
 	}
 
-	clients := map[ITcpClient]*RpcClient{}
-	engine.HandleOnMessage(func(c ITcpClient, msg IMessage) {
+	clients := map[*TcpClient]*RpcClient{}
+	engine.HandleOnMessage(func(c *TcpClient, msg IMessage) {
 		//if engine.running {
 		switch msg.Cmd() {
 		case CmdPing:
@@ -105,8 +105,8 @@ func NewRpcClientPool(addr string, engine *TcpEngin, codec IRpcCodec, poolSize i
 	})
 
 	if codec == nil {
-		codec = DefaultRpcCodec
-		logDebug("use default rpc codec: %v", defaultRpcCodecType)
+		codec = DefaultCodec
+		logDebug("use default rpc codec: %v", DefaultRpcCodecType)
 	}
 
 	pool := &RpcClientPool{
@@ -121,11 +121,11 @@ func NewRpcClientPool(addr string, engine *TcpEngin, codec IRpcCodec, poolSize i
 			return nil, err
 		}
 		safeGo(func() {
-			client.Keepalive(_conf_sock_keepalive_time)
+			client.Keepalive(DefaultSockKeepaliveTime)
 		})
 
 		rpcclient := &RpcClient{client, map[int64]*rpcsession{}, pool.codec}
-		rpcclient.OnClose("-", func(ITcpClient) {
+		rpcclient.OnClose("-", func(*TcpClient) {
 			rpcclient.Lock()
 			defer rpcclient.Unlock()
 			for _, session := range rpcclient.sessionMap {

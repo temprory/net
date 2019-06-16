@@ -6,15 +6,15 @@ import (
 	"time"
 )
 
-type IRpcClient interface {
-	ITcpClient
-	Codec() IRpcCodec
-	// CallCmd(cmd uint32, req interface{}, rsp interface{}) error
-	// CallCmdWithTimeout(cmd uint32, req interface{}, rsp interface{}, timeout time.Duration) error
-	// CallMethod(method string, req interface{}, rsp interface{}) error
-	// CallMethodWithTimeout(method string, req interface{}, rsp interface{}, timeout time.Duration) error
-	Call(method string, req interface{}, rsp interface{}, timeout time.Duration) error
-}
+// type IRpcClient interface {
+// 	*TcpClient
+// 	Codec() ICodec
+// 	// CallCmd(cmd uint32, req interface{}, rsp interface{}) error
+// 	// CallCmdWithTimeout(cmd uint32, req interface{}, rsp interface{}, timeout time.Duration) error
+// 	// CallMethod(method string, req interface{}, rsp interface{}) error
+// 	// CallMethodWithTimeout(method string, req interface{}, rsp interface{}, timeout time.Duration) error
+// 	Call(method string, req interface{}, rsp interface{}, timeout time.Duration) error
+// }
 
 type RpcMessage struct {
 	msg IMessage
@@ -29,7 +29,7 @@ type rpcsession struct {
 type RpcClient struct {
 	*TcpClient
 	sessionMap map[int64]*rpcsession
-	codec      IRpcCodec
+	codec      ICodec
 }
 
 func (client *RpcClient) removeSession(seq int64) {
@@ -99,7 +99,7 @@ func (client *RpcClient) callCmdWithTimeout(cmd uint32, data []byte, timeout tim
 	return nil, ErrRpcCallClientError
 }
 
-func (client *RpcClient) Codec() IRpcCodec {
+func (client *RpcClient) Codec() ICodec {
 	return client.codec
 }
 
@@ -170,11 +170,11 @@ func (client *RpcClient) Call(method string, req interface{}, rsp interface{}, t
 	return err
 }
 
-func NewRpcClient(addr string, engine *TcpEngin, codec IRpcCodec, onConnected func(ITcpClient)) (IRpcClient, error) {
+func NewRpcClient(addr string, engine *TcpEngin, codec ICodec, onConnected func(*TcpClient)) (*RpcClient, error) {
 	if engine == nil {
 		engine = NewTcpEngine()
-		engine.SetSendQueueSize(_conf_sock_rpc_send_q_size)
-		engine.SetSockRecvBlockTime(_conf_sock_rpc_recv_block_time)
+		engine.SetSendQueueSize(DefaultSockRpcSendQSize)
+		engine.SetSockRecvBlockTime(DefaultSockRpcRecvBlockTime)
 	}
 
 	client, err := NewTcpClient(addr, engine, NewCipherGzip(0), true, onConnected)
@@ -182,15 +182,15 @@ func NewRpcClient(addr string, engine *TcpEngin, codec IRpcCodec, onConnected fu
 		return nil, err
 	}
 	safeGo(func() {
-		client.Keepalive(_conf_sock_keepalive_time)
+		client.Keepalive(DefaultSockKeepaliveTime)
 	})
 
 	if codec == nil {
-		codec = DefaultRpcCodec
-		logDebug("use default rpc codec: %v", defaultRpcCodecType)
+		codec = DefaultCodec
+		logDebug("use default rpc codec: %v", DefaultRpcCodecType)
 	}
 	rpcclient := &RpcClient{client, map[int64]*rpcsession{}, codec}
-	rpcclient.OnClose("-", func(ITcpClient) {
+	rpcclient.OnClose("-", func(*TcpClient) {
 		rpcclient.Lock()
 		defer rpcclient.Unlock()
 		for _, session := range rpcclient.sessionMap {
@@ -199,7 +199,7 @@ func NewRpcClient(addr string, engine *TcpEngin, codec IRpcCodec, onConnected fu
 		rpcclient.sessionMap = map[int64]*rpcsession{}
 	})
 
-	engine.HandleOnMessage(func(c ITcpClient, msg IMessage) {
+	engine.HandleOnMessage(func(c *TcpClient, msg IMessage) {
 		//if engine.running {
 		switch msg.Cmd() {
 		case CmdPing:
@@ -239,21 +239,21 @@ func NewRpcClient(addr string, engine *TcpEngin, codec IRpcCodec, onConnected fu
 	return rpcclient, nil
 }
 
-// func NewGobRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+// func NewGobRpcClient(addr string, engine *TcpEngin, onConnected func(*TcpClient)) (IRpcClient, error) {
 // 	c, err := NewRpcClient(addr, engine, &RpcCodecGob{}, onConnected)
 // 	return c, err
 // }
 
-// func NewJsonRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+// func NewJsonRpcClient(addr string, engine *TcpEngin, onConnected func(*TcpClient)) (IRpcClient, error) {
 // 	c, err := NewRpcClient(addr, engine, &RpcCodecJson{}, onConnected)
 // 	return c, err
 // }
 
-// func NewMsgpackRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+// func NewMsgpackRpcClient(addr string, engine *TcpEngin, onConnected func(*TcpClient)) (IRpcClient, error) {
 // 	c, err := NewRpcClient(addr, engine, &RpcCodecMsgpack{}, onConnected)
 // 	return c, err
 // }
 
-// func NewProtobufRpcClient(addr string, engine *TcpEngin, onConnected func(ITcpClient)) (IRpcClient, error) {
+// func NewProtobufRpcClient(addr string, engine *TcpEngin, onConnected func(*TcpClient)) (IRpcClient, error) {
 // 	return NewRpcClient(addr, engine, &RpcCodecProtobuf{}, onConnected)
 // }

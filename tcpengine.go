@@ -15,14 +15,14 @@ type ITcpEngin interface {
 	HandleNewConn(func(conn *net.TCPConn) error)
 
 	//on new connect callback
-	CreateClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient
+	CreateClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient
 
-	HandleCreateClient(createClient func(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient)
+	HandleCreateClient(createClient func(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient)
 
 	//on new connect callback
-	OnNewClient(client ITcpClient)
+	OnNewClient(client *TcpClient)
 	//setting on new connect callback
-	HandleNewClient(onNewClient func(client ITcpClient))
+	HandleNewClient(onNewClient func(client *TcpClient))
 
 	//on disconnected callback
 	NewCipher() ICipher
@@ -30,29 +30,29 @@ type ITcpEngin interface {
 	HandleNewCipher(func() ICipher)
 
 	//on disconnected callback
-	OnDisconnected(client ITcpClient)
+	OnDisconnected(client *TcpClient)
 	//setting on disconnected callback
-	HandleDisconnected(func(client ITcpClient))
+	HandleDisconnected(func(client *TcpClient))
 
 	//on send queue is full callback
-	OnSendQueueFull(ITcpClient, interface{})
+	OnSendQueueFull(*TcpClient, interface{})
 	//setting on disconnected callback
-	HandleSendQueueFull(func(ITcpClient, interface{}))
+	HandleSendQueueFull(func(*TcpClient, interface{}))
 
-	Send(client ITcpClient, data []byte) error
-	HandleSend(func(client ITcpClient, data []byte) error)
+	Send(client *TcpClient, data []byte) error
+	HandleSend(func(client *TcpClient, data []byte) error)
 
 	//message router
-	RecvMsg(client ITcpClient) IMessage
+	RecvMsg(client *TcpClient) IMessage
 	//setting message router
-	HandleRecv(func(client ITcpClient) IMessage)
+	HandleRecv(func(client *TcpClient) IMessage)
 
-	OnMessage(client ITcpClient, msg IMessage)
-	HandleOnMessage(onMsg func(client ITcpClient, msg IMessage))
+	OnMessage(client *TcpClient, msg IMessage)
+	HandleOnMessage(onMsg func(client *TcpClient, msg IMessage))
 
 	//handle message by cmd
-	Handle(cmd uint32, handler func(client ITcpClient, msg IMessage))
-	//HandleRpcCmd(cmd uint32, handler func(client ITcpClient, msg IMessage))
+	Handle(cmd uint32, handler func(client *TcpClient, msg IMessage))
+	//HandleRpcCmd(cmd uint32, handler func(client *TcpClient, msg IMessage))
 	HandleRpcCmd(cmd uint32, h func(ctx *RpcContext), async bool)
 	HandleRpcMethod(method string, h func(ctx *RpcContext), async bool)
 
@@ -93,8 +93,8 @@ type TcpEngin struct {
 	sync.RWMutex
 	sync.WaitGroup
 
-	clients             map[ITcpClient]struct{}
-	handlerMap          map[uint32]func(ITcpClient, IMessage)
+	clients             map[*TcpClient]struct{}
+	handlerMap          map[uint32]func(*TcpClient, IMessage)
 	rpcMethodHandlerMap map[string]func(*RpcContext)
 
 	running           bool
@@ -110,14 +110,14 @@ type TcpEngin struct {
 	sockSendBlockTime time.Duration
 
 	onNewConnHandler      func(conn *net.TCPConn) error
-	createClientHandler   func(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient
-	onNewClientHandler    func(client ITcpClient)
+	createClientHandler   func(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient
+	onNewClientHandler    func(client *TcpClient)
 	newCipherHandler      func() ICipher
-	onDisconnectedHandler func(client ITcpClient)
-	sendQueueFullHandler  func(ITcpClient, interface{})
-	recvHandler           func(client ITcpClient) IMessage
-	sendHandler           func(client ITcpClient, data []byte) error
-	onMsgHandler          func(client ITcpClient, msg IMessage)
+	onDisconnectedHandler func(client *TcpClient)
+	sendQueueFullHandler  func(*TcpClient, interface{})
+	recvHandler           func(client *TcpClient) IMessage
+	sendHandler           func(client *TcpClient, data []byte) error
+	onMsgHandler          func(client *TcpClient, msg IMessage)
 }
 
 func (engine *TcpEngin) OnNewConn(conn *net.TCPConn) error {
@@ -171,7 +171,7 @@ func (engine *TcpEngin) HandleNewConn(onNewConn func(conn *net.TCPConn) error) {
 }
 
 //on new connect callback
-func (engine *TcpEngin) CreateClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient {
+func (engine *TcpEngin) CreateClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient {
 	if engine.createClientHandler != nil {
 		return engine.createClientHandler(conn, parent, cipher)
 	}
@@ -179,19 +179,19 @@ func (engine *TcpEngin) CreateClient(conn *net.TCPConn, parent ITcpEngin, cipher
 }
 
 //setting on new connect callback
-func (engine *TcpEngin) HandleCreateClient(createClient func(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) ITcpClient) {
+func (engine *TcpEngin) HandleCreateClient(createClient func(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient) {
 	engine.createClientHandler = createClient
 }
 
 //on new connect callback
-func (engine *TcpEngin) OnNewClient(client ITcpClient) {
+func (engine *TcpEngin) OnNewClient(client *TcpClient) {
 	if engine.onNewClientHandler != nil {
 		engine.onNewClientHandler(client)
 	}
 }
 
 //setting on new connect callback
-func (engine *TcpEngin) HandleNewClient(onNewClient func(client ITcpClient)) {
+func (engine *TcpEngin) HandleNewClient(onNewClient func(client *TcpClient)) {
 	engine.onNewClientHandler = onNewClient
 }
 
@@ -209,16 +209,16 @@ func (engine *TcpEngin) HandleNewCipher(newCipher func() ICipher) {
 }
 
 //on disconnected callback
-func (engine *TcpEngin) OnDisconnected(client ITcpClient) {
+func (engine *TcpEngin) OnDisconnected(client *TcpClient) {
 	if engine.onDisconnectedHandler != nil {
 		engine.onDisconnectedHandler(client)
 	}
 }
 
 //setting on disconnected callback
-func (engine *TcpEngin) HandleDisconnected(onDisconnected func(client ITcpClient)) {
+func (engine *TcpEngin) HandleDisconnected(onDisconnected func(client *TcpClient)) {
 	pre := engine.onDisconnectedHandler
-	engine.onDisconnectedHandler = func(c ITcpClient) {
+	engine.onDisconnectedHandler = func(c *TcpClient) {
 		defer handlePanic()
 		if pre != nil {
 			pre(c)
@@ -228,7 +228,7 @@ func (engine *TcpEngin) HandleDisconnected(onDisconnected func(client ITcpClient
 }
 
 //message router
-func (engine *TcpEngin) RecvMsg(client ITcpClient) IMessage {
+func (engine *TcpEngin) RecvMsg(client *TcpClient) IMessage {
 	// defer handlePanic()
 
 	if engine.recvHandler != nil {
@@ -248,17 +248,17 @@ func (engine *TcpEngin) RecvMsg(client ITcpClient) IMessage {
 		},
 		readLen:    0,
 		dataLen:    0,
-		remoteAddr: client.Conn().RemoteAddr().String(),
+		remoteAddr: client.Conn.RemoteAddr().String(),
 	}
 
-	if pkt.err = client.Conn().SetReadDeadline(time.Now().Add(engine.sockRecvBlockTime)); pkt.err != nil {
-		logDebug("%s RecvMsg SetReadDeadline Err: %v.", client.Conn().RemoteAddr().String(), pkt.err)
+	if pkt.err = client.Conn.SetReadDeadline(time.Now().Add(engine.sockRecvBlockTime)); pkt.err != nil {
+		logDebug("%s RecvMsg SetReadDeadline Err: %v.", client.Conn.RemoteAddr().String(), pkt.err)
 		goto Exit
 	}
 
-	pkt.readLen, pkt.err = io.ReadFull(client.Conn(), pkt.msg.data)
+	pkt.readLen, pkt.err = io.ReadFull(client.Conn, pkt.msg.data)
 	if pkt.err != nil || pkt.readLen < _message_head_len {
-		logDebug("%s RecvMsg Read Head Err: %v, readLen: %d.", client.Conn().RemoteAddr().String(), pkt.err, pkt.readLen)
+		logDebug("%s RecvMsg Read Head Err: %v, readLen: %d.", client.Conn.RemoteAddr().String(), pkt.err, pkt.readLen)
 		goto Exit
 	}
 
@@ -266,19 +266,19 @@ func (engine *TcpEngin) RecvMsg(client ITcpClient) IMessage {
 
 	if pkt.dataLen > 0 {
 		if pkt.dataLen+_message_head_len > engine.sockMaxPackLen {
-			logDebug("%s RecvMsg Read Body Err: Msg Len(%d) > MAXPACK_LEN(%d)", client.Conn().RemoteAddr().String(), pkt.dataLen+_message_head_len, engine.sockMaxPackLen)
+			logDebug("%s RecvMsg Read Body Err: Msg Len(%d) > MAXPACK_LEN(%d)", client.Conn.RemoteAddr().String(), pkt.dataLen+_message_head_len, engine.sockMaxPackLen)
 			goto Exit
 		}
 
-		if pkt.err = client.Conn().SetReadDeadline(time.Now().Add(engine.sockRecvBlockTime)); pkt.err != nil {
-			logDebug("%s RecvMsg SetReadDeadline Err: %v.", client.Conn().RemoteAddr().String(), pkt.err)
+		if pkt.err = client.Conn.SetReadDeadline(time.Now().Add(engine.sockRecvBlockTime)); pkt.err != nil {
+			logDebug("%s RecvMsg SetReadDeadline Err: %v.", client.Conn.RemoteAddr().String(), pkt.err)
 			goto Exit
 		}
 
 		pkt.msg.data = append(pkt.msg.data, make([]byte, pkt.dataLen)...)
-		pkt.readLen, pkt.err = io.ReadFull(client.Conn(), pkt.msg.data[_message_head_len:])
+		pkt.readLen, pkt.err = io.ReadFull(client.Conn, pkt.msg.data[_message_head_len:])
 		if pkt.err != nil {
-			logDebug("%s RecvMsg Read Body Err: %v", client.Conn().RemoteAddr().String(), pkt.err)
+			logDebug("%s RecvMsg Read Body Err: %v", client.Conn.RemoteAddr().String(), pkt.err)
 			goto Exit
 		}
 	}
@@ -286,7 +286,7 @@ func (engine *TcpEngin) RecvMsg(client ITcpClient) IMessage {
 	pkt.msg.rawData = pkt.msg.data
 	pkt.msg.data = nil
 	if _, pkt.err = pkt.msg.Decrypt(client.RecvSeq(), client.RecvKey(), client.Cipher()); pkt.err != nil {
-		logDebug("%s RecvMsg Decrypt Err: %v", client.Conn().RemoteAddr().String(), pkt.err)
+		logDebug("%s RecvMsg Decrypt Err: %v", client.Conn.RemoteAddr().String(), pkt.err)
 		goto Exit
 	}
 
@@ -297,44 +297,44 @@ Exit:
 }
 
 //setting message router
-func (engine *TcpEngin) HandleRecv(recver func(client ITcpClient) IMessage) {
+func (engine *TcpEngin) HandleRecv(recver func(client *TcpClient) IMessage) {
 	engine.recvHandler = recver
 }
 
-func (engine *TcpEngin) OnSendQueueFull(client ITcpClient, msg interface{}) {
+func (engine *TcpEngin) OnSendQueueFull(client *TcpClient, msg interface{}) {
 	if engine.sendQueueFullHandler != nil {
 		engine.sendQueueFullHandler(client, msg)
 	}
 }
 
-func (engine *TcpEngin) HandleSendQueueFull(cb func(ITcpClient, interface{})) {
-	engine.sendQueueFullHandler = cb
+func (engine *TcpEngin) HandleSendQueueFull(h func(*TcpClient, interface{})) {
+	engine.sendQueueFullHandler = h
 }
 
-func (engine *TcpEngin) Send(client ITcpClient, data []byte) error {
+func (engine *TcpEngin) Send(client *TcpClient, data []byte) error {
 	if engine.sendHandler != nil {
 		return engine.sendHandler(client, data)
 	}
-	err := client.Conn().SetWriteDeadline(time.Now().Add(engine.sockSendBlockTime))
+	err := client.Conn.SetWriteDeadline(time.Now().Add(engine.sockSendBlockTime))
 	if err != nil {
-		logDebug("%s Send SetReadDeadline Err: %v", client.Conn().RemoteAddr().String(), err)
+		logDebug("%s Send SetReadDeadline Err: %v", client.Conn.RemoteAddr().String(), err)
 		client.Stop()
 		return err
 	}
 
-	_, err = client.Conn().Write(data)
+	_, err = client.Conn.Write(data)
 	if err != nil {
-		logDebug("%s Send Write Err: %v", client.Conn().RemoteAddr().String(), err)
+		logDebug("%s Send Write Err: %v", client.Conn.RemoteAddr().String(), err)
 		client.Stop()
 	}
 	return err
 }
 
-func (engine *TcpEngin) HandleSend(sender func(client ITcpClient, data []byte) error) {
+func (engine *TcpEngin) HandleSend(sender func(client *TcpClient, data []byte) error) {
 	engine.sendHandler = sender
 }
 
-func (engine *TcpEngin) OnMessage(client ITcpClient, msg IMessage) {
+func (engine *TcpEngin) OnMessage(client *TcpClient, msg IMessage) {
 	if !engine.running {
 		switch msg.Cmd() {
 		case CmdPing:
@@ -368,12 +368,12 @@ func (engine *TcpEngin) OnMessage(client ITcpClient, msg IMessage) {
 	}
 }
 
-func (engine *TcpEngin) HandleOnMessage(onMsg func(client ITcpClient, msg IMessage)) {
+func (engine *TcpEngin) HandleOnMessage(onMsg func(client *TcpClient, msg IMessage)) {
 	engine.onMsgHandler = onMsg
 }
 
 //handle message by cmd
-func (engine *TcpEngin) Handle(cmd uint32, handler func(client ITcpClient, msg IMessage)) {
+func (engine *TcpEngin) Handle(cmd uint32, handler func(client *TcpClient, msg IMessage)) {
 	if cmd == CmdPing {
 		panic(ErrorReservedCmdPing)
 	}
@@ -416,19 +416,19 @@ func (engine *TcpEngin) HandleRpcCmd(cmd uint32, handler func(ctx *RpcContext), 
 		panic(fmt.Errorf("HandleRpcCmd failed: handler for cmd %v exists", cmd))
 	}
 	if async {
-		engine.handlerMap[cmd] = func(client ITcpClient, msg IMessage) {
+		engine.handlerMap[cmd] = func(client *TcpClient, msg IMessage) {
 			safeGo(func() {
 				handler(&RpcContext{client: client, message: msg})
 			})
 		}
 	} else {
-		engine.handlerMap[cmd] = func(client ITcpClient, msg IMessage) {
+		engine.handlerMap[cmd] = func(client *TcpClient, msg IMessage) {
 			handler(&RpcContext{client: client, message: msg})
 		}
 	}
 }
 
-func (engine *TcpEngin) onRpcMethod(client ITcpClient, msg IMessage) {
+func (engine *TcpEngin) onRpcMethod(client *TcpClient, msg IMessage) {
 	data := msg.Body()
 	if len(data) < 2 {
 		client.SendMsg(NewRpcMessage(CmdRpcError, msg.RpcSeq(), []byte("invalid rpc payload")))
@@ -473,7 +473,7 @@ func (engine *TcpEngin) HandleRpcMethod(method string, handler func(ctx *RpcCont
 	}
 }
 
-// func (engine *TcpEngin) HandleRpc(cmd uint32, handler func(client ITcpClient, msg IMessage)) {
+// func (engine *TcpEngin) HandleRpc(cmd uint32, handler func(client *TcpClient, msg IMessage)) {
 // 	engine.Handle(cmd, handler)
 // }
 
@@ -567,19 +567,19 @@ func (engine *TcpEngin) BroadCast(msg IMessage) {
 
 func NewTcpEngine() *TcpEngin {
 	engine := &TcpEngin{
-		clients:           map[ITcpClient]struct{}{},
-		handlerMap:        map[uint32]func(ITcpClient, IMessage){},
+		clients:           map[*TcpClient]struct{}{},
+		handlerMap:        map[uint32]func(*TcpClient, IMessage){},
 		running:           true,
-		sockNoDelay:       _conf_sock_nodelay,
-		sockKeepAlive:     _conf_sock_keepalive,
-		sendQsize:         _conf_sock_send_q_size,
-		sockRecvBufLen:    _conf_sock_recv_buf_len,
-		sockSendBufLen:    _conf_sock_send_buf_len,
-		sockMaxPackLen:    _conf_sock_pack_max_len,
-		sockLingerSeconds: _conf_sock_linger_seconds,
-		sockRecvBlockTime: _conf_sock_recv_block_time,
-		sockSendBlockTime: _conf_sock_send_block_time,
-		sockKeepaliveTime: _conf_sock_keepalive_time,
+		sockNoDelay:       DefaultSockNodelay,
+		sockKeepAlive:     DefaultSockKeepalive,
+		sendQsize:         DefaultSendQSize,
+		sockRecvBufLen:    DefaultSockRecvBufLen,
+		sockSendBufLen:    DefaultSockSendBufLen,
+		sockMaxPackLen:    DefaultSockPackMaxLen,
+		sockLingerSeconds: DefaultSockLingerSeconds,
+		sockRecvBlockTime: DefaultSockRecvBlockTime,
+		sockSendBlockTime: DefaultSockSendBlockTime,
+		sockKeepaliveTime: DefaultSockKeepaliveTime,
 	}
 
 	cipher := NewCipherGzip(0)

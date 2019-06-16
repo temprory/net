@@ -8,7 +8,12 @@ import (
 
 type asyncMessage struct {
 	data []byte
-	cb   func(ITcpClient, error)
+	cb   func(*TcpClient, error)
+}
+
+type wsAsyncMessage struct {
+	data []byte
+	cb   func(*WSClient, error)
 }
 
 const (

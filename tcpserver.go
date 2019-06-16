@@ -28,7 +28,7 @@ type ITcpServer interface {
 	HandleServerStop(stopHandler func(server ITcpServer))
 	EnableBroadcast()
 	Broadcast(msg IMessage)
-	BroadcastWithFilter(msg IMessage, filter func(ITcpClient) bool)
+	BroadcastWithFilter(msg IMessage, filter func(*TcpClient) bool)
 }
 
 type TcpServer struct {
@@ -46,7 +46,7 @@ type TcpServer struct {
 	onStopHandler func(server ITcpServer)
 }
 
-func (server *TcpServer) addClient(client ITcpClient) {
+func (server *TcpServer) addClient(client *TcpClient) {
 	if server.enableBroad {
 		server.Lock()
 		server.clients[client] = struct{}{}
@@ -57,7 +57,7 @@ func (server *TcpServer) addClient(client ITcpClient) {
 	server.OnNewClient(client)
 }
 
-func (server *TcpServer) deleClient(client ITcpClient) {
+func (server *TcpServer) deleClient(client *TcpClient) {
 	if server.enableBroad {
 		server.Lock()
 		delete(server.clients, client)
@@ -84,7 +84,7 @@ func (server *TcpServer) listenerLoop() error {
 		err error
 		// idx    uint64
 		conn   *net.TCPConn
-		client ITcpClient
+		client *TcpClient
 		// file      *os.File
 		tempDelay time.Duration
 	)
@@ -263,7 +263,7 @@ func (server *TcpServer) Broadcast(msg IMessage) {
 	server.Unlock()
 }
 
-func (server *TcpServer) BroadcastWithFilter(msg IMessage, filter func(ITcpClient) bool) {
+func (server *TcpServer) BroadcastWithFilter(msg IMessage, filter func(*TcpClient) bool) {
 	if !server.enableBroad {
 		panic(ErrorBroadcastNotEnabled)
 	}
@@ -279,9 +279,9 @@ func (server *TcpServer) BroadcastWithFilter(msg IMessage, filter func(ITcpClien
 func NewTcpServer(tag string) ITcpServer {
 	server := &TcpServer{
 		TcpEngin: TcpEngin{
-			clients: map[ITcpClient]struct{}{},
-			handlerMap: map[uint32]func(ITcpClient, IMessage){
-				CmdSetReaIp: func(client ITcpClient, msg IMessage) {
+			clients: map[*TcpClient]struct{}{},
+			handlerMap: map[uint32]func(*TcpClient, IMessage){
+				CmdSetReaIp: func(client *TcpClient, msg IMessage) {
 					ip := msg.Body()
 					if len(ip) == 4 {
 						client.SetRealIp(fmt.Sprintf("%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]))
@@ -291,17 +291,18 @@ func NewTcpServer(tag string) ITcpServer {
 				},
 			},
 
-			sockNoDelay:       _conf_sock_nodelay,
-			sockKeepAlive:     _conf_sock_keepalive,
-			sendQsize:         _conf_sock_send_q_size,
-			sockRecvBufLen:    _conf_sock_recv_buf_len,
-			sockSendBufLen:    _conf_sock_send_buf_len,
-			sockMaxPackLen:    _conf_sock_pack_max_len,
-			sockRecvBlockTime: _conf_sock_recv_block_time,
-			sockSendBlockTime: _conf_sock_send_block_time,
-			sockKeepaliveTime: _conf_sock_keepalive_time,
+			sockNoDelay:       DefaultSockNodelay,
+			sockKeepAlive:     DefaultSockKeepalive,
+			sendQsize:         DefaultSendQSize,
+			sockRecvBufLen:    DefaultSockRecvBufLen,
+			sockSendBufLen:    DefaultSockSendBufLen,
+			sockMaxPackLen:    DefaultSockPackMaxLen,
+			sockRecvBlockTime: DefaultSockRecvBlockTime,
+			sockSendBlockTime: DefaultSockSendBlockTime,
+			sockKeepaliveTime: DefaultSockKeepaliveTime,
 		},
-		tag: tag,
+		maxLoad: DefaultMaxOnline,
+		tag:     tag,
 	}
 
 	cipher := NewCipherGzip(0)

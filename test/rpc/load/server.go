@@ -32,7 +32,7 @@ func onJsonRpc(ctx *net.RpcContext) {
 	}
 }
 
-var client net.ITcpClient
+var client net.*TcpClient
 
 func main() {
 	go func() {

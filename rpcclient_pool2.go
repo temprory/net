@@ -22,11 +22,11 @@ package net
 // 	return pool.clients[idx].Call(method, req, rsp, timeout)
 // }
 
-// func NewRpcClientPool(addr string, engine *TcpEngin, codec IRpcCodec, size int, onConnected func(ITcpClient)) (*RpcClientPool, error) {
+// func NewRpcClientPool(addr string, engine *TcpEngin, codec ICodec, size int, onConnected func(*TcpClient)) (*RpcClientPool, error) {
 // 	if engine == nil {
 // 		engine = NewTcpEngine()
-// 		engine.SetSendQueueSize(_conf_sock_rpc_send_q_size)
-// 		engine.SetSockRecvBlockTime(_conf_sock_rpc_recv_block_time)
+// 		engine.SetSendQueueSize(DefaultSockRpcSendQSize)
+// 		engine.SetSockRecvBlockTime(DefaultSockRpcRecvBlockTime)
 // 	}
 // 	//func NewClientPool(addr string, size int) *RpcClientPool {
 // 	if size <= 0 {

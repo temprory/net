@@ -9,56 +9,56 @@ import (
 	"time"
 )
 
-type ITcpClient interface {
-	Conn() *net.TCPConn
+// type ITcpClient interface {
+// 	Conn() *net.TCPConn
 
-	Ip() string
-	SetRealIp(string)
+// 	Ip() string
+// 	SetRealIp(string)
 
-	Port() int
+// 	Port() int
 
-	Lock()
-	Unlock()
+// 	Lock()
+// 	Unlock()
 
-	//IsRunning() bool
+// 	//IsRunning() bool
 
-	OnClose(tag interface{}, cb func(ITcpClient))
-	CancelOnClose(tag interface{})
+// 	OnClose(tag interface{}, cb func(*TcpClient))
+// 	CancelOnClose(tag interface{})
 
-	SendMsg(msg IMessage) error
-	SendMsgWithCallback(msg IMessage, cb func(client ITcpClient, err error)) error
-	SendData(data []byte) error
-	SendDataWithCallback(data []byte, cb func(client ITcpClient, err error)) error
+// 	SendMsg(msg IMessage) error
+// 	SendMsgWithCallback(msg IMessage, cb func(client *TcpClient, err error)) error
+// 	SendData(data []byte) error
+// 	SendDataWithCallback(data []byte, cb func(client *TcpClient, err error)) error
 
-	// SendMsgSync(msg IMessage) error
-	// SendMsgSyncWithoutLock(msg IMessage) error
-	pushDataSync(data []byte) error
-	// pushDataSyncWithoutLock(data []byte) error
+// 	// SendMsgSync(msg IMessage) error
+// 	// SendMsgSyncWithoutLock(msg IMessage) error
+// 	pushDataSync(data []byte) error
+// 	// pushDataSyncWithoutLock(data []byte) error
 
-	RecvSeq() int64
-	SendSeq() int64
+// 	RecvSeq() int64
+// 	SendSeq() int64
 
-	RecvKey() uint32
-	SendKey() uint32
+// 	RecvKey() uint32
+// 	SendKey() uint32
 
-	Cipher() ICipher
-	SetCipher(cipher ICipher)
+// 	Cipher() ICipher
+// 	SetCipher(cipher ICipher)
 
-	UserData() interface{}
-	SetUserData(interface{})
+// 	UserData() interface{}
+// 	SetUserData(interface{})
 
-	Keepalive(interval time.Duration)
-	Stop() error
-	Shutdown() error
+// 	Keepalive(interval time.Duration)
+// 	Stop() error
+// 	Shutdown() error
 
-	start()
-}
+// 	start()
+// }
 
 type TcpClient struct {
 	sync.Mutex
 
 	//tcp connection
-	conn *net.TCPConn
+	Conn *net.TCPConn
 
 	//tcp server parent
 	parent ITcpEngin
@@ -85,7 +85,7 @@ type TcpClient struct {
 	chSend chan asyncMessage
 
 	//client close callbacks
-	onCloseMap map[interface{}]func(ITcpClient)
+	onCloseMap map[interface{}]func(*TcpClient)
 
 	userdata interface{}
 
@@ -96,16 +96,16 @@ type TcpClient struct {
 	shutdown bool
 }
 
-func (client *TcpClient) Conn() *net.TCPConn {
-	return client.conn
-}
+// func (client *TcpClient) Conn() *net.TCPConn {
+// 	return client.Conn
+// }
 
 func (client *TcpClient) Ip() string {
 	if client.realIp != "" {
 		return client.realIp
 	}
-	if client.conn != nil {
-		addr := client.conn.RemoteAddr().String()
+	if client.Conn != nil {
+		addr := client.Conn.RemoteAddr().String()
 		if pos := strings.LastIndex(addr, ":"); pos > 0 {
 			return addr[:pos]
 		}
@@ -114,8 +114,8 @@ func (client *TcpClient) Ip() string {
 }
 
 func (client *TcpClient) Port() int {
-	if client.conn != nil {
-		addr := client.conn.RemoteAddr().String()
+	if client.Conn != nil {
+		addr := client.Conn.RemoteAddr().String()
 		if pos := strings.LastIndex(addr, ":"); pos > 0 {
 			if port, err := strconv.Atoi(addr[pos+1:]); err == nil {
 				return port
@@ -129,11 +129,11 @@ func (client *TcpClient) SetRealIp(ip string) {
 	client.realIp = ip
 }
 
-func (client *TcpClient) IsRunning() bool {
-	return client.running
-}
+// func (client *TcpClient) IsRunning() bool {
+// 	return client.running
+// }
 
-func (client *TcpClient) OnClose(tag interface{}, cb func(client ITcpClient)) {
+func (client *TcpClient) OnClose(tag interface{}, cb func(client *TcpClient)) {
 	client.Lock()
 	if client.running {
 		client.onCloseMap[tag] = cb
@@ -172,7 +172,7 @@ func (client *TcpClient) SendMsg(msg IMessage) error {
 	return err
 }
 
-func (client *TcpClient) SendMsgWithCallback(msg IMessage, cb func(ITcpClient, error)) error {
+func (client *TcpClient) SendMsgWithCallback(msg IMessage, cb func(*TcpClient, error)) error {
 	var err error = nil
 	client.Lock()
 	if client.running {
@@ -218,7 +218,7 @@ func (client *TcpClient) SendData(data []byte) error {
 	return err
 }
 
-func (client *TcpClient) SendDataWithCallback(data []byte, cb func(ITcpClient, error)) error {
+func (client *TcpClient) SendDataWithCallback(data []byte, cb func(*TcpClient, error)) error {
 	var err error = nil
 	client.Lock()
 	if client.running {
@@ -315,13 +315,13 @@ func (client *TcpClient) restart(conn *net.TCPConn) {
 	if !client.running {
 		client.running = true
 
-		client.conn = conn
+		client.Conn = conn
 		if client.cipher != nil {
 			client.cipher.Init()
 		}
 		sendQsize := client.parent.SendQueueSize()
 		if sendQsize <= 0 {
-			sendQsize = _conf_sock_send_q_size
+			sendQsize = DefaultSendQSize
 		}
 		client.chSend = make(chan asyncMessage, sendQsize)
 
@@ -340,9 +340,9 @@ func (client *TcpClient) stop() {
 
 	close(client.chSend)
 
-	client.conn.CloseRead()
-	client.conn.CloseWrite()
-	client.conn.Close()
+	client.Conn.CloseRead()
+	client.Conn.CloseWrite()
+	client.Conn.Close()
 
 	for _, cb := range client.onCloseMap {
 		cb(client)
@@ -359,13 +359,13 @@ func (client *TcpClient) Stop() error {
 	client.running = false
 	client.Unlock()
 	if running {
-		if client.conn != nil {
-			err := client.conn.CloseRead()
+		if client.Conn != nil {
+			err := client.Conn.CloseRead()
 			if err != nil {
 				return err
 			}
-			return client.conn.CloseWrite()
-			//return client.conn.Close()
+			return client.Conn.CloseWrite()
+			//return client.Conn.Close()
 		}
 	}
 	return ErrTcpClientIsStopped
@@ -389,6 +389,8 @@ func (client *TcpClient) send(amsg *asyncMessage) error {
 }
 
 func (client *TcpClient) writer() {
+	defer client.Stop()
+
 	var err error = nil
 	for asyncMsg := range client.chSend {
 		err = client.send(&asyncMsg)
@@ -396,8 +398,7 @@ func (client *TcpClient) writer() {
 			asyncMsg.cb(client, err)
 		}
 		if err != nil {
-			client.Stop()
-			//break
+			break
 		}
 		client.sendSeq++
 	}
@@ -421,7 +422,7 @@ func createTcpClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpCl
 	}
 	sendQsize := parent.SendQueueSize()
 	if sendQsize <= 0 {
-		sendQsize = _conf_sock_send_q_size
+		sendQsize = DefaultSendQSize
 	}
 
 	conn.SetNoDelay(parent.SockNoDelay())
@@ -433,16 +434,16 @@ func createTcpClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpCl
 	conn.SetWriteBuffer(parent.SockSendBufLen())
 
 	return &TcpClient{
-		conn:       conn,
+		Conn:       conn,
 		parent:     parent,
 		cipher:     cipher,
 		chSend:     make(chan asyncMessage, sendQsize),
-		onCloseMap: map[interface{}]func(ITcpClient){},
+		onCloseMap: map[interface{}]func(*TcpClient){},
 		running:    true,
 	}
 }
 
-func NewTcpClient(addr string, parent ITcpEngin, cipher ICipher, autoReconn bool, onConnected func(ITcpClient)) (*TcpClient, error) {
+func NewTcpClient(addr string, parent ITcpEngin, cipher ICipher, autoReconn bool, onConnected func(*TcpClient)) (*TcpClient, error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		logDebug("NewTcpClient failed: ", err)
@@ -458,7 +459,7 @@ func NewTcpClient(addr string, parent ITcpEngin, cipher ICipher, autoReconn bool
 	client.start()
 
 	if autoReconn {
-		client.OnClose("reconn", func(ITcpClient) {
+		client.OnClose("reconn", func(*TcpClient) {
 			safeGo(func() {
 				times := 0
 				tempDelay := time.Second / 10

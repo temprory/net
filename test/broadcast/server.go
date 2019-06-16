@@ -16,21 +16,21 @@ var (
 	eventMgr = event.New("broadcast")
 )
 
-func onNewClient(client net.ITcpClient) {
+func onNewClient(client net.*TcpClient) {
 	log.Info("onNewClient")
 	//订阅广播
 	eventMgr.Subscrib(client, EVT_BROAD, func(e interface{}, args ...interface{}) {
 		log.Info("onEvent: %v", e)
 		if msg, ok := args[0].(net.IMessage); ok {
 			// if err := client.SendMsg(msg); err != nil {
-			// 	log.Info("server send to %v: %v failed: %v", client.Conn().RemoteAddr().String(), string(msg.Body()), err)
+			// 	log.Info("server send to %v: %v failed: %v", client.Conn.RemoteAddr().String(), string(msg.Body()), err)
 			// }
 			err := client.SendMsg(msg)
-			log.Info("server send to %v: %v: %v", client.Conn().RemoteAddr().String(), len(msg.Body()), err)
+			log.Info("server send to %v: %v: %v", client.Conn.RemoteAddr().String(), len(msg.Body()), err)
 		}
 	})
 	//断开时取消订阅广播
-	client.OnClose("-broadcast", func(c net.ITcpClient) {
+	client.OnClose("-broadcast", func(c net.*TcpClient) {
 		eventMgr.Unsubscrib(client)
 	})
 }

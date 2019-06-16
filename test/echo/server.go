@@ -12,10 +12,10 @@ const (
 	CMD_ECHO = uint32(1)
 )
 
-func onEcho(client net.ITcpClient, msg net.IMessage) {
-	log.Info("server onEcho recv from %v: %v", client.Conn().RemoteAddr().String(), string(msg.Body()))
+func onEcho(client net.*TcpClient, msg net.IMessage) {
+	log.Info("server onEcho recv from %v: %v", client.Conn.RemoteAddr().String(), string(msg.Body()))
 	err := client.SendMsg(msg)
-	log.Info("server send to%s: %v, %v,", client.Conn().RemoteAddr().String(), string(msg.Body()), err)
+	log.Info("server send to%s: %v, %v,", client.Conn.RemoteAddr().String(), string(msg.Body()), err)
 
 }
 

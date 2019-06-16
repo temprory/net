@@ -5,21 +5,32 @@ import (
 )
 
 var (
-	_conf_sock_nodelay   = true
-	_conf_sock_keepalive = false
+	DefaultSockNodelay   = true
+	DefaultSockKeepalive = false
 
-	_conf_gzip_enabled   = true
-	_conf_auto_gzip_size = 1024 - 16
+	DefaultSendQSize         = 512
+	DefaultSockRecvBufLen    = 1024
+	DefaultSockSendBufLen    = 1024
+	DefaultSockPackMaxLen    = 1024 * 1024
+	DefaultSockLingerSeconds = 0
+	DefaultSockKeepaliveTime = time.Second * 60
+	DefaultSockRecvBlockTime = time.Second * 65
+	DefaultSockSendBlockTime = time.Second * 5
 
-	_conf_sock_send_q_size     = 256
-	_conf_sock_recv_buf_len    = 1024
-	_conf_sock_send_buf_len    = 1024
-	_conf_sock_pack_max_len    = 1024 * 1024
-	_conf_sock_linger_seconds  = 0
-	_conf_sock_keepalive_time  = time.Second * 60
-	_conf_sock_recv_block_time = time.Second * 65
-	_conf_sock_send_block_time = time.Second * 5
+	DefaultSockRpcSendQSize     = 8192
+	DefaultSockRpcRecvBlockTime = time.Second * 3600 * 24
 
-	_conf_sock_rpc_send_q_size     = 4096
-	_conf_sock_rpc_recv_block_time = time.Second * 3600 * 24
+	// 默认最大连接数
+	DefaultMaxOnline = int64(40960)
+
+	// 默认读超时时间
+	DefaultReadTimeout = time.Second * 35
+
+	// 默认写超时时间
+	DefaultWriteTimeout = time.Second * 5
+
+	// 默认Shutdown超时时间
+	DefaultShutdownTimeout = time.Second * 5
+
+	DefaultReadLimit int64 = 1024 * 16
 )

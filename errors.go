@@ -23,4 +23,9 @@ var (
 	ErrorReservedCmdSetRealip = fmt.Errorf("cmd %d/0x%X is reserved for set client's real ip, plz use other number", CmdSetReaIp, CmdSetReaIp)
 	ErrorReservedCmdRpcMethod = fmt.Errorf("cmd %d/0x%X is reserved for rpc method, plz use other number", CmdRpcMethod, CmdRpcMethod)
 	ErrorReservedCmdRpcError  = fmt.Errorf("cmd %d/0x%X is reserved for rpc method error, plz use other number", CmdRpcError, CmdRpcError)
+
+	ErrWSClientIsStopped       = errors.New("websocket client is stopped")
+	ErrWSClientSendQueueIsFull = errors.New("websocket client's send queue is full")
+	ErrWSClientWithoutCodec    = errors.New("websocket client has no codec")
+	ErrWSEngineShutdownTimeout = errors.New("shutdown timeout")
 )

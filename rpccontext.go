@@ -5,23 +5,20 @@ import (
 	"encoding/gob"
 	"errors"
 	"github.com/golang/protobuf/proto"
-	"github.com/json-iterator/go"
 	"github.com/vmihailenco/msgpack"
 )
 
 var (
 	ErrInvalidBody = errors.New("invalid body")
-
-	json = jsoniter.ConfigCompatibleWithStandardLibrary
 )
 
 type RpcContext struct {
 	method  string
-	client  ITcpClient
+	client  *TcpClient
 	message IMessage
 }
 
-func (ctx *RpcContext) Client() ITcpClient {
+func (ctx *RpcContext) Client() *TcpClient {
 	return ctx.client
 }
 
@@ -50,11 +47,11 @@ func (ctx *RpcContext) WriteMsg(msg IMessage) error {
 }
 
 func (ctx *RpcContext) Bind(v interface{}) error {
-	return DefaultRpcCodec.Unmarshal(ctx.Body(), v)
+	return DefaultCodec.Unmarshal(ctx.Body(), v)
 }
 
 func (ctx *RpcContext) Write(v interface{}) error {
-	data, err := DefaultRpcCodec.Marshal(v)
+	data, err := DefaultCodec.Marshal(v)
 	if err != nil {
 		return err
 	}
