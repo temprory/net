@@ -30,7 +30,7 @@ func onConnected(client *net.TcpClient) {
 func main() {
 	var (
 		err        error
-		addr       = "127.0.0.1:18200"
+		addr       = "127.0.0.1:8888"
 		client     *net.TcpClient
 		cipher     net.ICipher = net.NewCipherGzip(-1)
 		autoReconn             = true

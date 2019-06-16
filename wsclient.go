@@ -88,7 +88,7 @@ func (cli *WSClient) readloop() {
 		cli.recvSeq++
 
 		// 用户自定义消息处理
-		cli.onMessage(cli, data)
+		cli.onMessage(cli, msg)
 	}
 }
 

@@ -1,7 +1,7 @@
 package net
 
 import (
-	"encoding/binary"
+	// "encoding/binary"
 	"github.com/temprory/log"
 	"sync"
 	"time"
@@ -32,21 +32,21 @@ type WSEngine struct {
 	cipher ICipher
 
 	// 消息处理方法
-	handlers map[uint32]func(cli *WSClient, cmd uint32, data []byte)
+	handlers map[uint32]func(cli *WSClient, msg IMessage)
 
 	//自定义消息处理
-	messageHandler func(cli *WSClient, data []byte)
+	messageHandler func(cli *WSClient, msg IMessage)
 
 	sendQueueFullHandler func(cli *WSClient, msg interface{})
 
 	newCipherHandler func() ICipher
 }
 
-func (engine *WSEngine) HandleMessage(h func(cli *WSClient, data []byte)) {
+func (engine *WSEngine) HandleMessage(h func(cli *WSClient, msg IMessage)) {
 	engine.messageHandler = h
 }
 
-func (engine *WSEngine) Handle(cmd uint32, h func(cli *WSClient, cmd uint32, data []byte)) {
+func (engine *WSEngine) Handle(cmd uint32, h func(cli *WSClient, msg IMessage)) {
 	if _, ok := engine.handlers[cmd]; ok {
 		log.Panic("Websocket Handle failed, cmd %v already exist", cmd)
 	}
@@ -75,7 +75,7 @@ func (engine *WSEngine) HandleNewCipher(newCipher func() ICipher) {
 }
 
 // 消息处理
-func (engine *WSEngine) onMessage(cli *WSClient, data []byte) {
+func (engine *WSEngine) onMessage(cli *WSClient, msg IMessage) {
 	if engine.shutdown {
 		return
 	}
@@ -84,22 +84,14 @@ func (engine *WSEngine) onMessage(cli *WSClient, data []byte) {
 	defer handlePanic()
 
 	if engine.messageHandler != nil {
-		engine.messageHandler(cli, data)
+		engine.messageHandler(cli, msg)
 		return
 	}
 
-	if len(data) < 4 {
-		log.Debug("Websocket invalid data len: %v, shutdown client", len(data))
-		cli.Stop()
-		return
-	}
-
-	cmd := binary.LittleEndian.Uint32(data[:4])
-
-	if h, ok := engine.handlers[cmd]; ok {
-		h(cli, cmd, data[4:])
+	if h, ok := engine.handlers[msg.Cmd()]; ok {
+		h(cli, msg)
 	} else {
-		log.Debug("Websocket no handler for cmd: %v", cmd)
+		log.Debug("Websocket no handler for cmd: %v", msg.Cmd())
 	}
 }
 
@@ -111,7 +103,7 @@ func NewWebsocketEngine() *WSEngine {
 		ReadLimit:    DefaultReadLimit,
 		SendQSize:    DefaultSendQSize,
 		shutdown:     false,
-		handlers:     map[uint32]func(cli *WSClient, cmd uint32, data []byte){},
+		handlers:     map[uint32]func(cli *WSClient, msg IMessage){},
 	}
 
 	cipher := NewCipherGzip(0)
