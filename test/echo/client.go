@@ -1,40 +1,45 @@
 package main
 
 import (
-	"fmt"
 	"github.com/temprory/log"
 	"github.com/temprory/net"
 	"time"
 )
 
-const (
+var (
 	CMD_ECHO = uint32(1)
+
+	reqData = make([]byte, 0)
 )
 
 func onEcho(client net.ITcpClient, msg net.IMessage) {
-	log.Debug("client onEcho recv from %v: %v", client.Conn().RemoteAddr().String(), string(msg.Body()))
+	log.Debug("client onEcho recv from %v: %v, %v", client.Conn().RemoteAddr().String(), string(reqData) == string(msg.Body()), len(msg.Body()))
 }
 
 func onConnected(client net.ITcpClient) {
 	for i := 0; i < 20; i++ {
-		err := client.SendMsg(net.NewMessage(CMD_ECHO, []byte(fmt.Sprintf("hello %v", i+1))))
-		log.Debug("client send to %v: %v, %v", client.Conn().RemoteAddr().String(), fmt.Sprintf("hello %v", i+1), err)
+		err := client.SendMsg(net.NewMessage(CMD_ECHO, reqData))
 		if err != nil {
 			break
 		}
 		time.Sleep(time.Second)
+		break
 	}
 }
 
 func main() {
 	var (
 		err        error
-		addr       = "127.0.0.1:8888"
+		addr       = "127.0.0.1:18200"
 		client     net.ITcpClient
-		cipher     net.ICipher = nil
+		cipher     net.ICipher = net.NewCipherGzip(0)
 		autoReconn             = true
 		netengine              = net.NewTcpEngine()
 	)
+
+	for i, _ := range reqData {
+		reqData[i] = 'a'
+	}
 
 	netengine.Handle(CMD_ECHO, onEcho)
 

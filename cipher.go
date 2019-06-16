@@ -19,7 +19,7 @@ func (cipher *CipherGzip) Init() {
 }
 
 func (cipher *CipherGzip) Encrypt(seq int64, key uint32, data []byte) []byte {
-	if len(data) <= cipher.threshold {
+	if len(data) <= cipher.threshold+_message_head_len {
 		return data
 	}
 	body := gzipCompress(data[_message_head_len:])
@@ -33,6 +33,7 @@ func (cipher *CipherGzip) Encrypt(seq int64, key uint32, data []byte) []byte {
 
 func (cipher *CipherGzip) Decrypt(seq int64, key uint32, data []byte) ([]byte, error) {
 	cmd := binary.LittleEndian.Uint32(data[_cmd_idx_begin:_cmd_idx_end])
+
 	if cmd&CmdFlagMaskGzip != CmdFlagMaskGzip {
 		return data, nil
 	}
@@ -46,8 +47,8 @@ func (cipher *CipherGzip) Decrypt(seq int64, key uint32, data []byte) ([]byte, e
 }
 
 func NewCipherGzip(threshold int) ICipher {
-	if threshold <= 0 {
-		threshold = 1024
-	}
+	// if threshold <= 0 {
+	// 	threshold = 1024
+	// }
 	return &CipherGzip{threshold}
 }
