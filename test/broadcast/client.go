@@ -9,7 +9,7 @@ const (
 	CMD_BROAD = uint32(1)
 )
 
-func onBroadcast(client net.*TcpClient, msg net.IMessage) {
+func onBroadcast(client *net.TcpClient, msg net.IMessage) {
 	str := "aaaaaaaaaa"
 	for j := 0; j < 256; j++ {
 		str += "aaaaaaaaaa"
@@ -26,7 +26,7 @@ func runClient() {
 	var (
 		err        error
 		addr       = "127.0.0.1:8888"
-		client     net.*TcpClient
+		client     *net.TcpClient
 		cipher     net.ICipher = nil
 		autoReconn             = true
 		netengine              = net.NewTcpEngine()

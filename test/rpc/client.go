@@ -27,14 +27,14 @@ type HelloReply struct {
 	Message string
 }
 
-func onEcho(client net.*TcpClient, msg net.IMessage) {
+func onEcho(client *net.TcpClient, msg net.IMessage) {
 	//log.Info("onEcho: %v", string(msg.Body()))
 	atomic.AddInt64(&qpsEcho, 1)
 	time.Sleep(time.Second / 10)
 	client.SendMsg(msg)
 }
 
-func onSvrCall(client net.*TcpClient, msg net.IMessage) {
+func onSvrCall(client *net.TcpClient, msg net.IMessage) {
 	//log.Info("onSvrCall: %v", string(msg.Body()))
 	atomic.AddInt64(&qpsSvrCall, 1)
 }
@@ -54,7 +54,7 @@ func main() {
 	engine.Handle(CMD_ECHO, onEcho)
 	engine.Handle(CMD_SVR_CALL, onSvrCall)
 
-	pool, err := net.NewRpcClientPool(addr, engine, nil, poolSize, func(c net.*TcpClient) {
+	pool, err := net.NewRpcClientPool(addr, engine, nil, poolSize, func(c *net.TcpClient) {
 		//client send cmd msg to server
 		c.SendMsg(net.NewMessage(CMD_ECHO, []byte(fmt.Sprintf("hello_%v", 2))))
 

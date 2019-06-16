@@ -16,7 +16,7 @@ var (
 	eventMgr = event.New("broadcast")
 )
 
-func onNewClient(client net.*TcpClient) {
+func onNewClient(client *net.TcpClient) {
 	log.Info("onNewClient")
 	//订阅广播
 	eventMgr.Subscrib(client, EVT_BROAD, func(e interface{}, args ...interface{}) {
@@ -30,7 +30,7 @@ func onNewClient(client net.*TcpClient) {
 		}
 	})
 	//断开时取消订阅广播
-	client.OnClose("-broadcast", func(c net.*TcpClient) {
+	client.OnClose("-broadcast", func(c *net.TcpClient) {
 		eventMgr.Unsubscrib(client)
 	})
 }
