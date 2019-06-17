@@ -15,24 +15,24 @@ var (
 	_client_rm_from_server = 0
 )
 
-type ITcpServer interface {
-	ITcpEngin
-	Start(addr string) error
-	Stop()
-	StopWithTimeout(timeout time.Duration, onStop func())
-	Serve(addr string, stopTimeout time.Duration)
-	CurrLoad() int64
-	MaxLoad() int64
-	SetMaxConcurrent(maxLoad int64)
-	AcceptedNum() int64
-	HandleServerStop(stopHandler func(server ITcpServer))
-	EnableBroadcast()
-	Broadcast(msg IMessage)
-	BroadcastWithFilter(msg IMessage, filter func(*TcpClient) bool)
-}
+// type ITcpServer interface {
+// 	ITcpEngin
+// 	Start(addr string) error
+// 	Stop()
+// 	StopWithTimeout(timeout time.Duration, onStop func())
+// 	Serve(addr string, stopTimeout time.Duration)
+// 	CurrLoad() int64
+// 	MaxLoad() int64
+// 	SetMaxConcurrent(maxLoad int64)
+// 	AcceptedNum() int64
+// 	HandleServerStop(stopHandler func(server ITcpServer))
+// 	EnableBroadcast()
+// 	Broadcast(msg IMessage)
+// 	BroadcastWithFilter(msg IMessage, filter func(*TcpClient) bool)
+// }
 
 type TcpServer struct {
-	TcpEngin
+	*TcpEngin
 	tag string
 	//running       bool
 	enableBroad   bool
@@ -43,7 +43,7 @@ type TcpServer struct {
 	listener      *net.TCPListener
 	stopTimeout   time.Duration
 	onStop        func()
-	onStopHandler func(server ITcpServer)
+	onStopHandler func(server *TcpServer)
 }
 
 func (server *TcpServer) addClient(client *TcpClient) {
@@ -104,7 +104,7 @@ func (server *TcpServer) listenerLoop() error {
 				server.accepted++
 
 				if err = server.OnNewConn(conn); err == nil {
-					client = server.CreateClient(conn, server, server.NewCipher())
+					client = server.CreateClient(conn, server.TcpEngin, server.NewCipher())
 					client.start()
 					server.addClient(client)
 				} else {
@@ -244,7 +244,7 @@ func (server *TcpServer) AcceptedNum() int64 {
 }
 
 //handle message by cmd
-func (server *TcpServer) HandleServerStop(stopHandler func(server ITcpServer)) {
+func (server *TcpServer) HandleServerStop(stopHandler func(server *TcpServer)) {
 	server.onStopHandler = stopHandler
 }
 
@@ -276,9 +276,9 @@ func (server *TcpServer) BroadcastWithFilter(msg IMessage, filter func(*TcpClien
 	server.Unlock()
 }
 
-func NewTcpServer(tag string) ITcpServer {
+func NewTcpServer(tag string) *TcpServer {
 	server := &TcpServer{
-		TcpEngin: TcpEngin{
+		TcpEngin: &TcpEngin{
 			clients: map[*TcpClient]struct{}{},
 			handlerMap: map[uint32]func(*TcpClient, IMessage){
 				CmdSetReaIp: func(client *TcpClient, msg IMessage) {

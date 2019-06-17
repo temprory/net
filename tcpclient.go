@@ -61,7 +61,7 @@ type TcpClient struct {
 	Conn *net.TCPConn
 
 	//tcp server parent
-	parent ITcpEngin
+	parent *TcpEngin
 
 	//recv packet sequence
 	recvSeq int64
@@ -127,6 +127,13 @@ func (client *TcpClient) Port() int {
 
 func (client *TcpClient) SetRealIp(ip string) {
 	client.realIp = ip
+}
+
+func (client *TcpClient) Bind(data []byte, v interface{}) error {
+	if client.parent.Codec == nil {
+		return ErrClientWithoutCodec
+	}
+	return client.parent.Codec.Unmarshal(data, v)
 }
 
 // func (client *TcpClient) IsRunning() bool {
@@ -416,7 +423,7 @@ func (client *TcpClient) reader() {
 	}
 }
 
-func createTcpClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient {
+func createTcpClient(conn *net.TCPConn, parent *TcpEngin, cipher ICipher) *TcpClient {
 	if parent == nil {
 		parent = NewTcpEngine()
 	}
@@ -443,7 +450,7 @@ func createTcpClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpCl
 	}
 }
 
-func NewTcpClient(addr string, parent ITcpEngin, cipher ICipher, autoReconn bool, onConnected func(*TcpClient)) (*TcpClient, error) {
+func NewTcpClient(addr string, parent *TcpEngin, cipher ICipher, autoReconn bool, onConnected func(*TcpClient)) (*TcpClient, error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		logDebug("NewTcpClient failed: ", err)

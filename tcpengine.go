@@ -8,86 +8,86 @@ import (
 	"time"
 )
 
-type ITcpEngin interface {
-	//on new connect callback
-	OnNewConn(conn *net.TCPConn) error
-	//setting on new connect callback
-	HandleNewConn(func(conn *net.TCPConn) error)
+// type ITcpEngin interface {
+// 	//on new connect callback
+// 	OnNewConn(conn *net.TCPConn) error
+// 	//setting on new connect callback
+// 	HandleNewConn(func(conn *net.TCPConn) error)
 
-	//on new connect callback
-	CreateClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient
+// 	//on new connect callback
+// 	CreateClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient
 
-	HandleCreateClient(createClient func(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient)
+// 	HandleCreateClient(createClient func(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient)
 
-	//on new connect callback
-	OnNewClient(client *TcpClient)
-	//setting on new connect callback
-	HandleNewClient(onNewClient func(client *TcpClient))
+// 	//on new connect callback
+// 	OnNewClient(client *TcpClient)
+// 	//setting on new connect callback
+// 	HandleNewClient(onNewClient func(client *TcpClient))
 
-	//on disconnected callback
-	NewCipher() ICipher
-	//setting on disconnected callback
-	HandleNewCipher(func() ICipher)
+// 	//on disconnected callback
+// 	NewCipher() ICipher
+// 	//setting on disconnected callback
+// 	HandleNewCipher(func() ICipher)
 
-	//on disconnected callback
-	OnDisconnected(client *TcpClient)
-	//setting on disconnected callback
-	HandleDisconnected(func(client *TcpClient))
+// 	//on disconnected callback
+// 	OnDisconnected(client *TcpClient)
+// 	//setting on disconnected callback
+// 	HandleDisconnected(func(client *TcpClient))
 
-	//on send queue is full callback
-	OnSendQueueFull(*TcpClient, interface{})
-	//setting on disconnected callback
-	HandleSendQueueFull(func(*TcpClient, interface{}))
+// 	//on send queue is full callback
+// 	OnSendQueueFull(*TcpClient, interface{})
+// 	//setting on disconnected callback
+// 	HandleSendQueueFull(func(*TcpClient, interface{}))
 
-	Send(client *TcpClient, data []byte) error
-	HandleSend(func(client *TcpClient, data []byte) error)
+// 	Send(client *TcpClient, data []byte) error
+// 	HandleSend(func(client *TcpClient, data []byte) error)
 
-	//message router
-	RecvMsg(client *TcpClient) IMessage
-	//setting message router
-	HandleRecv(func(client *TcpClient) IMessage)
+// 	//message router
+// 	RecvMsg(client *TcpClient) IMessage
+// 	//setting message router
+// 	HandleRecv(func(client *TcpClient) IMessage)
 
-	OnMessage(client *TcpClient, msg IMessage)
-	HandleOnMessage(onMsg func(client *TcpClient, msg IMessage))
+// 	OnMessage(client *TcpClient, msg IMessage)
+// 	HandleOnMessage(onMsg func(client *TcpClient, msg IMessage))
 
-	//handle message by cmd
-	Handle(cmd uint32, handler func(client *TcpClient, msg IMessage))
-	//HandleRpcCmd(cmd uint32, handler func(client *TcpClient, msg IMessage))
-	HandleRpcCmd(cmd uint32, h func(ctx *RpcContext), async bool)
-	HandleRpcMethod(method string, h func(ctx *RpcContext), async bool)
+// 	//handle message by cmd
+// 	Handle(cmd uint32, handler func(client *TcpClient, msg IMessage))
+// 	//HandleRpcCmd(cmd uint32, handler func(client *TcpClient, msg IMessage))
+// 	HandleRpcCmd(cmd uint32, h func(ctx *RpcContext), async bool)
+// 	HandleRpcMethod(method string, h func(ctx *RpcContext), async bool)
 
-	SockNoDelay() bool
-	SetSockNoDelay(nodelay bool)
+// 	SockNoDelay() bool
+// 	SetSockNoDelay(nodelay bool)
 
-	SockKeepAlive() bool
-	SetSockKeepAlive(keepalive bool)
+// 	SockKeepAlive() bool
+// 	SetSockKeepAlive(keepalive bool)
 
-	SockKeepaliveTime() time.Duration
-	SetSockKeepaliveTime(keepaliveTime time.Duration)
+// 	SockKeepaliveTime() time.Duration
+// 	SetSockKeepaliveTime(keepaliveTime time.Duration)
 
-	SendQueueSize() int
-	SetSendQueueSize(size int)
+// 	SendQueueSize() int
+// 	SetSendQueueSize(size int)
 
-	SockRecvBufLen() int
-	SetSockRecvBufLen(recvBufLen int)
+// 	SockRecvBufLen() int
+// 	SetSockRecvBufLen(recvBufLen int)
 
-	SockSendBufLen() int
-	SetSockSendBufLen(sendBufLen int)
+// 	SockSendBufLen() int
+// 	SetSockSendBufLen(sendBufLen int)
 
-	SockMaxPackLen() int
-	SetSockMaxPackLen(maxPackLen int)
+// 	SockMaxPackLen() int
+// 	SetSockMaxPackLen(maxPackLen int)
 
-	SockLingerSeconds() int
-	SetSockLingerSeconds(sec int)
+// 	SockLingerSeconds() int
+// 	SetSockLingerSeconds(sec int)
 
-	SockRecvBlockTime() time.Duration
-	SetSockRecvBlockTime(recvBlockTime time.Duration)
+// 	SockRecvBlockTime() time.Duration
+// 	SetSockRecvBlockTime(recvBlockTime time.Duration)
 
-	SockSendBlockTime() time.Duration
-	SetSockSendBlockTime(sendBlockTime time.Duration)
+// 	SockSendBlockTime() time.Duration
+// 	SetSockSendBlockTime(sendBlockTime time.Duration)
 
-	BroadCast(msg IMessage)
-}
+// 	BroadCast(msg IMessage)
+// }
 
 type TcpEngin struct {
 	sync.RWMutex
@@ -98,6 +98,7 @@ type TcpEngin struct {
 	rpcMethodHandlerMap map[string]func(*RpcContext)
 
 	running           bool
+	Codec             ICodec
 	sockNoDelay       bool
 	sockKeepAlive     bool
 	sendQsize         int
@@ -110,7 +111,7 @@ type TcpEngin struct {
 	sockSendBlockTime time.Duration
 
 	onNewConnHandler      func(conn *net.TCPConn) error
-	createClientHandler   func(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient
+	createClientHandler   func(conn *net.TCPConn, parent *TcpEngin, cipher ICipher) *TcpClient
 	onNewClientHandler    func(client *TcpClient)
 	newCipherHandler      func() ICipher
 	onDisconnectedHandler func(client *TcpClient)
@@ -171,7 +172,7 @@ func (engine *TcpEngin) HandleNewConn(onNewConn func(conn *net.TCPConn) error) {
 }
 
 //on new connect callback
-func (engine *TcpEngin) CreateClient(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient {
+func (engine *TcpEngin) CreateClient(conn *net.TCPConn, parent *TcpEngin, cipher ICipher) *TcpClient {
 	if engine.createClientHandler != nil {
 		return engine.createClientHandler(conn, parent, cipher)
 	}
@@ -179,7 +180,7 @@ func (engine *TcpEngin) CreateClient(conn *net.TCPConn, parent ITcpEngin, cipher
 }
 
 //setting on new connect callback
-func (engine *TcpEngin) HandleCreateClient(createClient func(conn *net.TCPConn, parent ITcpEngin, cipher ICipher) *TcpClient) {
+func (engine *TcpEngin) HandleCreateClient(createClient func(conn *net.TCPConn, parent *TcpEngin, cipher ICipher) *TcpClient) {
 	engine.createClientHandler = createClient
 }
 
@@ -570,6 +571,7 @@ func NewTcpEngine() *TcpEngin {
 		clients:           map[*TcpClient]struct{}{},
 		handlerMap:        map[uint32]func(*TcpClient, IMessage){},
 		running:           true,
+		Codec:             DefaultCodec,
 		sockNoDelay:       DefaultSockNodelay,
 		sockKeepAlive:     DefaultSockKeepalive,
 		sendQsize:         DefaultSendQSize,

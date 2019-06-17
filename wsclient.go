@@ -182,9 +182,9 @@ func (cli *WSClient) SetRealIp(ip string) {
 
 func (cli *WSClient) Bind(data []byte, v interface{}) error {
 	if cli.Codec == nil {
-		return ErrWSClientWithoutCodec
+		return ErrClientWithoutCodec
 	}
-	return cli.WSEngine.Codec.Unmarshal(data, v)
+	return cli.Codec.Unmarshal(data, v)
 }
 
 func (cli *WSClient) SendMsg(msg IMessage) error {

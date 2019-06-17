@@ -26,6 +26,6 @@ var (
 
 	ErrWSClientIsStopped       = errors.New("websocket client is stopped")
 	ErrWSClientSendQueueIsFull = errors.New("websocket client's send queue is full")
-	ErrWSClientWithoutCodec    = errors.New("websocket client has no codec")
+	ErrClientWithoutCodec      = errors.New("websocket client has no codec")
 	ErrWSEngineShutdownTimeout = errors.New("shutdown timeout")
 )
