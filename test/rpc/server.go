@@ -22,7 +22,7 @@ type HelloReply struct {
 	Message string
 }
 
-func onEcho(client *net.TcpClient, msg net.IMessage) {
+func onEcho(client *net.TcpClient, msg *net.Message) {
 	//log.Info("onEcho: %v, %v", msg.Cmd(), string(msg.Body()))
 	client.SendMsg(msg)
 }

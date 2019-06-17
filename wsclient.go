@@ -187,7 +187,7 @@ func (cli *WSClient) Bind(data []byte, v interface{}) error {
 	return cli.Codec.Unmarshal(data, v)
 }
 
-func (cli *WSClient) SendMsg(msg IMessage) error {
+func (cli *WSClient) SendMsg(msg *Message) error {
 	var err error = nil
 	cli.Lock()
 	if cli.running {
@@ -210,7 +210,7 @@ func (cli *WSClient) SendMsg(msg IMessage) error {
 	return err
 }
 
-func (cli *WSClient) SendMsgWithCallback(msg IMessage, cb func(*WSClient, error)) error {
+func (cli *WSClient) SendMsgWithCallback(msg *Message, cb func(*WSClient, error)) error {
 	var err error = nil
 	cli.Lock()
 	if cli.running {

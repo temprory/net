@@ -25,13 +25,13 @@ import (
 // 	OnClose(tag interface{}, cb func(*TcpClient))
 // 	CancelOnClose(tag interface{})
 
-// 	SendMsg(msg IMessage) error
-// 	SendMsgWithCallback(msg IMessage, cb func(client *TcpClient, err error)) error
+// 	SendMsg(msg *Message) error
+// 	SendMsgWithCallback(msg *Message, cb func(client *TcpClient, err error)) error
 // 	SendData(data []byte) error
 // 	SendDataWithCallback(data []byte, cb func(client *TcpClient, err error)) error
 
-// 	// SendMsgSync(msg IMessage) error
-// 	// SendMsgSyncWithoutLock(msg IMessage) error
+// 	// SendMsgSync(msg *Message) error
+// 	// SendMsgSyncWithoutLock(msg *Message) error
 // 	pushDataSync(data []byte) error
 // 	// pushDataSyncWithoutLock(data []byte) error
 
@@ -156,7 +156,7 @@ func (client *TcpClient) CancelOnClose(tag interface{}) {
 	client.Unlock()
 }
 
-func (client *TcpClient) SendMsg(msg IMessage) error {
+func (client *TcpClient) SendMsg(msg *Message) error {
 	var err error = nil
 	client.Lock()
 	if client.running {
@@ -179,7 +179,7 @@ func (client *TcpClient) SendMsg(msg IMessage) error {
 	return err
 }
 
-func (client *TcpClient) SendMsgWithCallback(msg IMessage, cb func(*TcpClient, error)) error {
+func (client *TcpClient) SendMsgWithCallback(msg *Message, cb func(*TcpClient, error)) error {
 	var err error = nil
 	client.Lock()
 	if client.running {
@@ -413,7 +413,7 @@ func (client *TcpClient) writer() {
 
 func (client *TcpClient) reader() {
 	defer client.stop()
-	var imsg IMessage
+	var imsg *Message
 	for {
 		if imsg = client.parent.RecvMsg(client); imsg == nil {
 			break

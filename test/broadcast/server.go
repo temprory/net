@@ -21,7 +21,7 @@ func onNewClient(client *net.TcpClient) {
 	//订阅广播
 	eventMgr.Subscrib(client, EVT_BROAD, func(e interface{}, args ...interface{}) {
 		log.Info("onEvent: %v", e)
-		if msg, ok := args[0].(net.IMessage); ok {
+		if msg, ok := args[0].(*net.Message); ok {
 			// if err := client.SendMsg(msg); err != nil {
 			// 	log.Info("server send to %v: %v failed: %v", client.Conn.RemoteAddr().String(), string(msg.Body()), err)
 			// }

@@ -17,7 +17,7 @@ import (
 // }
 
 type RpcMessage struct {
-	msg IMessage
+	msg *Message
 	err error
 }
 
@@ -199,7 +199,7 @@ func NewRpcClient(addr string, engine *TcpEngin, codec ICodec, onConnected func(
 		rpcclient.sessionMap = map[int64]*rpcsession{}
 	})
 
-	engine.HandleOnMessage(func(c *TcpClient, msg IMessage) {
+	engine.HandleOnMessage(func(c *TcpClient, msg *Message) {
 		//if engine.running {
 		switch msg.Cmd() {
 		case CmdPing:

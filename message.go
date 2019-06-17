@@ -36,31 +36,31 @@ const (
 	CmdUserMax      = 0xFFFFFF
 )
 
-type IMessage interface {
-	HeadLen() int
-	BodyLen() int
+// type IMessage interface {
+// 	HeadLen() int
+// 	BodyLen() int
 
-	Cmd() uint32
-	SetCmd(cmd uint32)
+// 	Cmd() uint32
+// 	SetCmd(cmd uint32)
 
-	Ext() uint64
-	SetExt(ext uint64)
+// 	Ext() uint64
+// 	SetExt(ext uint64)
 
-	RpcSeq() int64
-	SetRpcSeq(seq int64)
+// 	RpcSeq() int64
+// 	SetRpcSeq(seq int64)
 
-	Data() []byte
-	SetData(data []byte)
+// 	Data() []byte
+// 	SetData(data []byte)
 
-	RawData() []byte
-	SetRawData(rawData []byte)
+// 	RawData() []byte
+// 	SetRawData(rawData []byte)
 
-	Body() []byte
-	SetBody(body []byte)
+// 	Body() []byte
+// 	SetBody(body []byte)
 
-	Encrypt(seq int64, key uint32, cipher ICipher) []byte
-	Decrypt(seq int64, key uint32, cipher ICipher) ([]byte, error)
-}
+// 	Encrypt(seq int64, key uint32, cipher ICipher) []byte
+// 	Decrypt(seq int64, key uint32, cipher ICipher) ([]byte, error)
+// }
 
 type Message struct {
 	data    []byte
@@ -174,7 +174,7 @@ func NewRpcMessage(cmd uint32, seq int64, data []byte) *Message {
 	return msg
 }
 
-func RealIpMsg(ip string) IMessage {
+func RealIpMsg(ip string) *Message {
 	ret := strings.Split(ip, ".")
 	if len(ret) == 4 {
 		var err error
@@ -192,6 +192,6 @@ func RealIpMsg(ip string) IMessage {
 	return NewMessage(CmdSetReaIp, []byte(ip))
 }
 
-func PingMsg() IMessage {
+func PingMsg() *Message {
 	return NewMessage(CmdPing, nil)
 }

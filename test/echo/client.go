@@ -12,7 +12,7 @@ var (
 	reqData = make([]byte, 10)
 )
 
-func onEcho(client *net.TcpClient, msg net.IMessage) {
+func onEcho(client *net.TcpClient, msg *net.Message) {
 	log.Debug("client onEcho recv from %v: %v, %v, %v", client.Conn.RemoteAddr().String(), string(msg.Body()), string(reqData) == string(msg.Body()), len(msg.Body()))
 }
 
