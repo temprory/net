@@ -210,7 +210,7 @@ func NewRpcClient(addr string, engine *TcpEngin, codec ICodec, onConnected func(
 			if ok {
 				session.done <- &RpcMessage{msg, nil}
 			} else {
-				logDebug("no rpcsession waiting for rpc response, cmd %X, ip: %v", msg.Cmd(), c.Ip())
+				logDebug("no rpcsession waiting for rpc response, cmd %v, ip: %v", msg.Cmd(), c.Ip())
 			}
 		case CmdRpcError:
 			rpcclient.Lock()
@@ -219,7 +219,7 @@ func NewRpcClient(addr string, engine *TcpEngin, codec ICodec, onConnected func(
 			if ok {
 				session.done <- &RpcMessage{msg, errors.New(string(msg.Body()))}
 			} else {
-				logDebug("no rpcsession waiting for rpc response, cmd %X, ip: %v", msg.Cmd(), c.Ip())
+				logDebug("no rpcsession waiting for rpc response, cmd %v, ip: %v", msg.Cmd(), c.Ip())
 			}
 		default:
 			if handler, ok := engine.handlerMap[msg.Cmd()]; ok {
@@ -228,7 +228,7 @@ func NewRpcClient(addr string, engine *TcpEngin, codec ICodec, onConnected func(
 				defer handlePanic()
 				handler(c, msg)
 			} else {
-				logDebug("no handler for cmd 0x%X", msg.Cmd())
+				logDebug("no handler for cmd %v", msg.Cmd())
 			}
 		}
 		// } else {

@@ -96,7 +96,7 @@ func NewRpcClientPool(addr string, engine *TcpEngin, codec ICodec, poolSize int,
 				defer handlePanic()
 				handler(c, msg)
 			} else {
-				logDebug("no handler for cmd 0x%X", msg.Cmd())
+				logDebug("no handler for cmd %v", msg.Cmd())
 			}
 		}
 		// } else {
