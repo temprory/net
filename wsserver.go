@@ -179,7 +179,8 @@ func (s *WSServer) HandleDisconnect(h func(cli *WSClient, ctx *gin.Context)) {
 
 // ws路由
 func (s *WSServer) HandleWs(path string) {
-	s.Any(path, s.onWebsocketRequest)
+	s.GET(path, s.onWebsocketRequest)
+	s.POST(path, s.onWebsocketRequest)
 }
 
 func (s *WSServer) Shutdown(timeout time.Duration, cb func(error)) {
