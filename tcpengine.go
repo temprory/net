@@ -584,7 +584,7 @@ func NewTcpEngine() *TcpEngin {
 		sockKeepaliveTime: DefaultSockKeepaliveTime,
 	}
 
-	cipher := NewCipherGzip(0)
+	cipher := NewCipherGzip(DefaultThreshold)
 	engine.HandleNewCipher(func() ICipher {
 		return cipher
 	})

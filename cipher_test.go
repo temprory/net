@@ -5,7 +5,7 @@ import (
 )
 
 func TestCipherGzip(t *testing.T) {
-	cipher := NewCipherGzip(0)
+	cipher := NewCipherGzip(DefaultThreshold)
 	str := ""
 	for i := 0; i < 256; i++ {
 		str += "abcdefghij"

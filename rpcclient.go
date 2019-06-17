@@ -177,7 +177,7 @@ func NewRpcClient(addr string, engine *TcpEngin, codec ICodec, onConnected func(
 		engine.SetSockRecvBlockTime(DefaultSockRpcRecvBlockTime)
 	}
 
-	client, err := NewTcpClient(addr, engine, NewCipherGzip(0), true, onConnected)
+	client, err := NewTcpClient(addr, engine, NewCipherGzip(DefaultThreshold), true, onConnected)
 	if err != nil {
 		return nil, err
 	}

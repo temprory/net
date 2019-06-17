@@ -4,6 +4,13 @@ import (
 	"encoding/binary"
 )
 
+const (
+	CipherGzipAll  = 0
+	CipherGzipNone = -1
+
+	DefaultThreshold = CipherGzipAll
+)
+
 type ICipher interface {
 	Init()
 	Encrypt(seq int64, key uint32, data []byte) []byte

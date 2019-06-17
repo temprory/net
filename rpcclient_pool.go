@@ -116,7 +116,7 @@ func NewRpcClientPool(addr string, engine *TcpEngin, codec ICodec, poolSize int,
 	}
 
 	for i := 0; i < poolSize; i++ {
-		client, err := NewTcpClient(addr, engine, NewCipherGzip(0), true, onConnected)
+		client, err := NewTcpClient(addr, engine, NewCipherGzip(DefaultThreshold), true, onConnected)
 		if err != nil {
 			return nil, err
 		}

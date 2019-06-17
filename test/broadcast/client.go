@@ -33,7 +33,7 @@ func runClient() {
 	)
 
 	netengine.Handle(CMD_BROAD, onBroadcast)
-	cipher = net.NewCipherGzip(0)
+	cipher = net.NewCipherGzip(net.DefaultThreshold)
 	netengine.HandleNewCipher(func() net.ICipher {
 		return cipher
 	})

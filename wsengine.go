@@ -106,7 +106,7 @@ func NewWebsocketEngine() *WSEngine {
 		handlers:     map[uint32]func(cli *WSClient, msg *Message){},
 	}
 
-	cipher := NewCipherGzip(0)
+	cipher := NewCipherGzip(DefaultThreshold)
 	engine.HandleNewCipher(func() ICipher {
 		return cipher
 	})

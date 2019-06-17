@@ -57,7 +57,7 @@ func goBroadcast() {
 
 func main() {
 	server := net.NewTcpServer("echo")
-	cipher := net.NewCipherGzip(0)
+	cipher := net.NewCipherGzip(net.DefaultThreshold)
 	server.HandleNewCipher(func() net.ICipher {
 		return cipher
 	})

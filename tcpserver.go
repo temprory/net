@@ -305,7 +305,7 @@ func NewTcpServer(tag string) *TcpServer {
 		tag:     tag,
 	}
 
-	cipher := NewCipherGzip(0)
+	cipher := NewCipherGzip(DefaultThreshold)
 	server.HandleNewCipher(func() ICipher {
 		return cipher
 	})
