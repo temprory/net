@@ -8,7 +8,7 @@ const (
 	CipherGzipAll  = 0
 	CipherGzipNone = -1
 
-	DefaultThreshold = CipherGzipAll
+	DefaultThreshold = CipherGzipNone
 )
 
 type ICipher interface {
