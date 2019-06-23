@@ -171,14 +171,14 @@ func (s *WSServer) HandleDisconnect(h func(cli *WSClient, w http.ResponseWriter,
 	s.disconnectHandler = h
 }
 
-// http路由
-func (s *WSServer) Handle(path string, h func(w http.ResponseWriter, r *http.Request)) {
-	s.routes[path] = h
-}
-
 // ws路由
 func (s *WSServer) HandleWs(path string) {
 	s.routes[path] = s.onWebsocketRequest
+}
+
+// http路由
+func (s *WSServer) HandleHttp(path string, h func(w http.ResponseWriter, r *http.Request)) {
+	s.routes[path] = h
 }
 
 func (s *WSServer) Shutdown(timeout time.Duration, cb func(error)) {

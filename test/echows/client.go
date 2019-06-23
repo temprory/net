@@ -22,15 +22,14 @@ func main() {
 	}
 
 	cli.Handle(CMD_ECHO, onEcho)
-	s := ""
-	for i := 0; i < 2048; i++ {
-		s += "a"
-	}
-	for i := 0; i < 10000000; i++ {
+	s := "hello ws"
+	// for i := 0; i < 2048; i++ {
+	// 	s += "a"
+	// }
+	for {
 		cli.SendMsg(net.NewMessage(CMD_ECHO, []byte(s)))
 		time.Sleep(time.Second)
 		// cli.Stop()
 		// time.Sleep(time.Second)
-		break
 	}
 }
