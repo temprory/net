@@ -2,7 +2,7 @@ package net
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
+	//"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/temprory/graceful"
 	"github.com/temprory/log"
@@ -13,27 +13,11 @@ import (
 	"time"
 )
 
-// func WsPage(c *gin.Context) {
-// 	// change the reqest to websocket model
-// 	conn, error := (&websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}).Upgrade(c.Writer, c.Request, nil)
-// 	if error != nil {
-// 		http.NotFound(c.Writer, c.Request)
-// 		return
-// 	}
-// 	// websocket connect
-// 	client := &ws.WSClient{Id: uuid.NewV4().String(), Socket: conn, Send: make(chan []byte)}
-
-// 	ws.Manager.Register <- client
-
-// 	go client.Read()
-// 	go client.Write()
-// }
-
 type WSServer struct {
 	*WSEngine
 
 	// router
-	*gin.Engine
+	//*gin.Engine
 
 	// http server
 	*graceful.HttpServer
@@ -42,13 +26,13 @@ type WSServer struct {
 	upgrader *websocket.Upgrader
 
 	// http请求过滤
-	requestHandler func(ctx *gin.Context) error
+	requestHandler func(w http.ResponseWriter, r *http.Request) error
 
 	// ws连接成功
-	connectHandler func(cli *WSClient, ctx *gin.Context) error
+	connectHandler func(cli *WSClient, w http.ResponseWriter, r *http.Request) error
 
 	// 连接断开
-	disconnectHandler func(cli *WSClient, ctx *gin.Context)
+	disconnectHandler func(cli *WSClient, w http.ResponseWriter, r *http.Request)
 
 	// 当前连接数
 	OnlineNum int64
@@ -59,6 +43,16 @@ type WSServer struct {
 	// handlers map[uint32]func(cli *WSClient, cmd uint32, data []byte)
 
 	clients map[*WSClient]struct{}
+
+	routes map[string]func(http.ResponseWriter, *http.Request)
+}
+
+func (s *WSServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if h, ok := s.routes[r.URL.Path]; ok {
+		h(w, r)
+	} else {
+		http.NotFound(w, r)
+	}
 }
 
 func (s *WSServer) SetUpgrader(upgrader *websocket.Upgrader) {
@@ -73,23 +67,23 @@ func (s *WSServer) SetUpgrader(upgrader *websocket.Upgrader) {
 // 	atomic.AddInt64(&s.OnlineNum, -1)
 // }
 
-func (s *WSServer) upgrade(ctx *gin.Context) {
+func (s *WSServer) onWebsocketRequest(w http.ResponseWriter, r *http.Request) {
 	defer handlePanic()
 
 	if s.shutdown {
-		http.NotFound(ctx.Writer, ctx.Request)
+		http.NotFound(w, r)
 		return
 	}
 
 	// http升级ws请求的应用层过滤
-	if s.requestHandler != nil && s.requestHandler(ctx) != nil {
-		http.NotFound(ctx.Writer, ctx.Request)
+	if s.requestHandler != nil && s.requestHandler(w, r) != nil {
+		http.NotFound(w, r)
 		return
 	}
 
-	conn, err := s.upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		http.NotFound(ctx.Writer, ctx.Request)
+		http.NotFound(w, r)
 		return
 	}
 
@@ -99,7 +93,7 @@ func (s *WSServer) upgrade(ctx *gin.Context) {
 	//过载保护,大于配置的最大连接数则拒绝连接
 	if s.MaxOnline > 0 && online >= s.MaxOnline {
 		atomic.AddInt64(&s.OnlineNum, -1)
-		http.NotFound(ctx.Writer, ctx.Request)
+		http.NotFound(w, r)
 		return
 	}
 
@@ -124,12 +118,12 @@ func (s *WSServer) upgrade(ctx *gin.Context) {
 
 		// ws关闭处理接口
 		if s.disconnectHandler != nil {
-			s.disconnectHandler(cli, ctx)
+			s.disconnectHandler(cli, w, r)
 		}
 	}()
 
 	// ws新连接过滤接口
-	if s.connectHandler != nil && s.connectHandler(cli, ctx) != nil {
+	if s.connectHandler != nil && s.connectHandler(cli, w, r) != nil {
 		return
 	}
 
@@ -153,9 +147,9 @@ func (s *WSServer) upgrade(ctx *gin.Context) {
 }
 
 // websocket upgrade handler
-func (s *WSServer) onWebsocketRequest(ctx *gin.Context) {
-	s.upgrade(ctx)
-}
+// func (s *WSServer) onWebsocketRequest(w http.ResponseWriter, r *http.Request) {
+// 	s.upgrade(ctx)
+// }
 
 // 默认消息处理
 // func (s *WSServer) onMessage(cli *WSClient, data []byte) {
@@ -163,24 +157,28 @@ func (s *WSServer) onWebsocketRequest(ctx *gin.Context) {
 // }
 
 // 设置http升级ws请求的应用层过滤接口
-func (s *WSServer) HandleRequest(h func(ctx *gin.Context) error) {
+func (s *WSServer) HandleRequest(h func(w http.ResponseWriter, r *http.Request) error) {
 	s.requestHandler = h
 }
 
 // 设置ws新连接过滤接口
-func (s *WSServer) HandleConnect(h func(cli *WSClient, ctx *gin.Context) error) {
+func (s *WSServer) HandleConnect(h func(cli *WSClient, w http.ResponseWriter, r *http.Request) error) {
 	s.connectHandler = h
 }
 
 // 设置ws关闭处理接口
-func (s *WSServer) HandleDisconnect(h func(cli *WSClient, ctx *gin.Context)) {
+func (s *WSServer) HandleDisconnect(h func(cli *WSClient, w http.ResponseWriter, r *http.Request)) {
 	s.disconnectHandler = h
+}
+
+// http路由
+func (s *WSServer) Handle(path string, h func(w http.ResponseWriter, r *http.Request)) {
+	s.routes[path] = h
 }
 
 // ws路由
 func (s *WSServer) HandleWs(path string) {
-	s.GET(path, s.onWebsocketRequest)
-	s.POST(path, s.onWebsocketRequest)
+	s.routes[path] = s.onWebsocketRequest
 }
 
 func (s *WSServer) Shutdown(timeout time.Duration, cb func(error)) {
@@ -189,7 +187,7 @@ func (s *WSServer) Shutdown(timeout time.Duration, cb func(error)) {
 	s.shutdown = true
 	s.Unlock()
 	if !shutdown {
-		log.Debug("WSEngine Shutdown ...")
+		log.Debug("WSServer Shutdown ...")
 
 		if timeout <= 0 {
 			timeout = DefaultShutdownTimeout
@@ -215,12 +213,12 @@ func (s *WSServer) Shutdown(timeout time.Duration, cb func(error)) {
 
 		select {
 		case <-ctx.Done():
-			log.Debug("WSEngine Shutdown timeout")
+			log.Debug("WSServer Shutdown timeout")
 			if cb != nil {
 				cb(ErrWSEngineShutdownTimeout)
 			}
 		case <-done:
-			log.Debug("WSEngine Shutdown success")
+			log.Debug("WSServer Shutdown success")
 			cb(nil)
 		}
 	}
@@ -230,16 +228,17 @@ func (s *WSServer) Shutdown(timeout time.Duration, cb func(error)) {
 func NewWebsocketServer(name string, addr string) (*WSServer, error) {
 	var err error
 	svr := &WSServer{
-		Engine:    gin.New(),
+		//Engine:    gin.New(),
 		WSEngine:  NewWebsocketEngine(),
 		MaxOnline: DefaultMaxOnline,
 		upgrader:  &websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }},
 		clients:   map[*WSClient]struct{}{},
+		routes:    map[string]func(http.ResponseWriter, *http.Request){},
 	}
 
 	// svr.WSEngine.MessageHandler = svr.onMessage
 
-	svr.HttpServer, err = graceful.NewHttpServer(addr, svr.Engine, time.Second*5, nil, func() {
+	svr.HttpServer, err = graceful.NewHttpServer(addr, svr, time.Second*5, nil, func() {
 		os.Exit(-1)
 	})
 
