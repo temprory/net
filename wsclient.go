@@ -352,14 +352,14 @@ func NewWebsocketClient(addr string) (*WSClient, error) {
 	return cli, nil
 }
 
-func NewWebsocketTLSClient(addr, certfile, keyfile string) (*WSClient, error) {
+func NewWebsocketTLSClient(addr string) (*WSClient, error) {
 	dialer := &websocket.Dialer{}
 	dialer.TLSClientConfig = &tls.Config{}
-	cert, err := tls.LoadX509KeyPair(certfile, keyfile)
-	if err != nil {
-		return nil, err
-	}
-	dialer.TLSClientConfig.Certificates = append(dialer.TLSClientConfig.Certificates, cert)
+	// cert, err := tls.LoadX509KeyPair(certfile, keyfile)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// dialer.TLSClientConfig.Certificates = append(dialer.TLSClientConfig.Certificates, cert)
 	dialer.TLSClientConfig.InsecureSkipVerify = true
 	conn, _, err := dialer.Dial(addr, nil)
 
