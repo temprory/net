@@ -5,6 +5,7 @@ import (
 	// "flag"
 	// "html/template"
 	// "net"
+	"crypto/tls"
 	"strconv"
 	"strings"
 	"sync"
@@ -332,6 +333,34 @@ func newClient(conn *websocket.Conn, engine *WSEngine) *WSClient {
 
 func NewWebsocketClient(addr string) (*WSClient, error) {
 	dialer := &websocket.Dialer{}
+	dialer.TLSClientConfig = &tls.Config{}
+	conn, _, err := dialer.Dial(addr, nil)
+
+	// conn.EnableWriteCompression(true)
+	// conn.SetCompressionLevel(flate.BestCompression)
+
+	if err != nil {
+		return nil, err
+	}
+
+	cli := newClient(conn, NewWebsocketEngine())
+
+	go cli.readloop()
+
+	go cli.writeloop()
+
+	return cli, nil
+}
+
+func NewWebsocketTLSClient(addr, certfile, keyfile string) (*WSClient, error) {
+	dialer := &websocket.Dialer{}
+	dialer.TLSClientConfig = &tls.Config{}
+	cert, err := tls.LoadX509KeyPair(certfile, keyfile)
+	if err != nil {
+		return nil, err
+	}
+	dialer.TLSClientConfig.Certificates = append(dialer.TLSClientConfig.Certificates, cert)
+	dialer.TLSClientConfig.InsecureSkipVerify = true
 	conn, _, err := dialer.Dial(addr, nil)
 
 	// conn.EnableWriteCompression(true)
