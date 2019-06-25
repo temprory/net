@@ -161,6 +161,12 @@ func NewMessage(cmd uint32, data []byte) *Message {
 	return msg
 }
 
+func RawMessage(data []byte) *Message {
+	return &Message{
+		data: data,
+	}
+}
+
 func NewRpcMessage(cmd uint32, seq int64, data []byte) *Message {
 	msg := &Message{
 		data: make([]byte, len(data)+_message_head_len),
