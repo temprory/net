@@ -11,9 +11,9 @@ import (
 	"time"
 )
 
-var (
-	_client_rm_from_server = 0
-)
+// var (
+// 	_client_rm_from_server = 0
+// )
 
 // type ITcpServer interface {
 // 	ITcpEngin
@@ -71,7 +71,6 @@ func (server *TcpServer) stopClients() {
 	defer server.Unlock()
 
 	for client, _ := range server.clients {
-		client.CancelOnClose(_client_rm_from_server)
 		client.Stop()
 	}
 }

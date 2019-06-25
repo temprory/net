@@ -1,7 +1,7 @@
 package net
 
 import (
-	"context"
+	//"context"
 	//"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/temprory/graceful"
@@ -35,10 +35,10 @@ type WSServer struct {
 	disconnectHandler func(cli *WSClient, w http.ResponseWriter, r *http.Request)
 
 	// 当前连接数
-	OnlineNum int64
+	currLoad int64
 
 	// 过载保护,同时最大连接数
-	MaxOnline int64
+	maxLoad int64
 
 	// handlers map[uint32]func(cli *WSClient, cmd uint32, data []byte)
 
@@ -64,7 +64,7 @@ func (s *WSServer) SetUpgrader(upgrader *websocket.Upgrader) {
 // 	delete(s.clients, cli)
 // 	s.Unlock()
 // 	// 计数减
-// 	atomic.AddInt64(&s.OnlineNum, -1)
+// 	atomic.AddInt64(&s.currLoad, -1)
 // }
 
 func (s *WSServer) onWebsocketRequest(w http.ResponseWriter, r *http.Request) {
@@ -88,11 +88,11 @@ func (s *WSServer) onWebsocketRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 计数减
-	online := atomic.AddInt64(&s.OnlineNum, 1)
+	online := atomic.AddInt64(&s.currLoad, 1)
 
 	//过载保护,大于配置的最大连接数则拒绝连接
-	if s.MaxOnline > 0 && online >= s.MaxOnline {
-		atomic.AddInt64(&s.OnlineNum, -1)
+	if s.maxLoad > 0 && online >= s.maxLoad {
+		atomic.AddInt64(&s.currLoad, -1)
 		http.NotFound(w, r)
 		return
 	}
@@ -112,7 +112,7 @@ func (s *WSServer) onWebsocketRequest(w http.ResponseWriter, r *http.Request) {
 		delete(s.clients, cli)
 		s.Unlock()
 		// 计数减
-		atomic.AddInt64(&s.OnlineNum, -1)
+		atomic.AddInt64(&s.currLoad, -1)
 
 		cli.Stop()
 
@@ -156,6 +156,18 @@ func (s *WSServer) onWebsocketRequest(w http.ResponseWriter, r *http.Request) {
 // 	s.onMessage(cli, data)
 // }
 
+func (server *WSServer) CurrLoad() int64 {
+	return atomic.LoadInt64(&server.currLoad)
+}
+
+func (server *WSServer) MaxLoad() int64 {
+	return server.maxLoad
+}
+
+func (server *WSServer) SetMaxConcurrent(maxLoad int64) {
+	server.maxLoad = maxLoad
+}
+
 func (s *WSServer) ClientNum() int {
 	s.Lock()
 	defer s.Unlock()
@@ -186,6 +198,16 @@ func (s *WSServer) HandleHttp(path string, h func(w http.ResponseWriter, r *http
 	s.routes[path] = h
 }
 
+func (s *WSServer) stopClients() {
+	s.Lock()
+	defer s.Unlock()
+
+	for client, _ := range s.clients {
+		//client.CancelOnClose(_client_rm_from_server)
+		client.Stop()
+	}
+}
+
 func (s *WSServer) Shutdown(timeout time.Duration, cb func(error)) {
 	s.Lock()
 	shutdown := s.shutdown
@@ -198,18 +220,11 @@ func (s *WSServer) Shutdown(timeout time.Duration, cb func(error)) {
 			timeout = DefaultShutdownTimeout
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		defer cancel()
-
 		done := make(chan struct{}, 1)
 		util.Go(func() {
 			s.Wait()
 
-			s.Lock()
-			for cli := range s.clients {
-				cli.Stop()
-			}
-			s.Unlock()
+			s.stopClients()
 
 			s.HttpServer.Shutdown()
 
@@ -217,7 +232,7 @@ func (s *WSServer) Shutdown(timeout time.Duration, cb func(error)) {
 		})
 
 		select {
-		case <-ctx.Done():
+		case <-time.After(timeout):
 			log.Debug("WSServer Shutdown timeout")
 			if cb != nil {
 				cb(ErrWSEngineShutdownTimeout)
@@ -234,11 +249,11 @@ func NewWebsocketServer(name string, addr string) (*WSServer, error) {
 	var err error
 	svr := &WSServer{
 		//Engine:    gin.New(),
-		WSEngine:  NewWebsocketEngine(),
-		MaxOnline: DefaultMaxOnline,
-		upgrader:  &websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }},
-		clients:   map[*WSClient]struct{}{},
-		routes:    map[string]func(http.ResponseWriter, *http.Request){},
+		WSEngine: NewWebsocketEngine(),
+		maxLoad:  DefaultMaxOnline,
+		upgrader: &websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }},
+		clients:  map[*WSClient]struct{}{},
+		routes:   map[string]func(http.ResponseWriter, *http.Request){},
 	}
 
 	// svr.WSEngine.MessageHandler = svr.onMessage
