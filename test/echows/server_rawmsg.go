@@ -3,6 +3,8 @@ package main
 import (
 	"github.com/temprory/log"
 	"github.com/temprory/net"
+	"runtime"
+	"time"
 )
 
 const (
@@ -10,10 +12,10 @@ const (
 )
 
 func onMessage(client *net.WSClient, msg *net.Message) {
-	log.Info("server recv from %v: %v", client.Conn.RemoteAddr().String(), string(msg.Data()))
-	err := client.SendMsg(msg)
-	log.Info("server send   to %s: %v, %v", client.Conn.RemoteAddr().String(), string(msg.Data()), err)
-
+	//log.Info("server recv from %v: %v", client.Conn.RemoteAddr().String(), string(msg.Data()))
+	//err := client.SendMsg(msg)
+	//log.Info("server send   to %s: %v, %v", client.Conn.RemoteAddr().String(), string(msg.Data()), err)
+	client.SendMsg(msg)
 }
 
 func main() {
@@ -24,5 +26,14 @@ func main() {
 	server.HandleWs("/ws/echo")
 	server.HandleMessage(onMessage)
 
+	go func() {
+		for {
+			time.Sleep(time.Second)
+			log.Println("--- runtime.NumGoroutine():", runtime.NumGoroutine())
+			log.Println("    client num:", server.ClientNum())
+		}
+
+	}()
 	server.Serve()
+
 }

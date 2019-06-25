@@ -156,7 +156,12 @@ func (s *WSServer) onWebsocketRequest(w http.ResponseWriter, r *http.Request) {
 // 	s.onMessage(cli, data)
 // }
 
-// 设置http升级ws请求的应用层过滤接口
+func (s *WSServer) ClientNum() int {
+	s.Lock()
+	defer s.Unlock()
+	return len(s.clients)
+}
+
 func (s *WSServer) HandleRequest(h func(w http.ResponseWriter, r *http.Request) error) {
 	s.requestHandler = h
 }
