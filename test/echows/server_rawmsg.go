@@ -3,7 +3,10 @@ package main
 import (
 	"github.com/temprory/log"
 	"github.com/temprory/net"
+	"github.com/temprory/util"
+	"os"
 	"runtime"
+	"syscall"
 	"time"
 )
 
@@ -34,6 +37,15 @@ func main() {
 		}
 
 	}()
-	server.Serve()
 
+	go server.Serve()
+
+	util.HandleSignal(func(sig os.Signal) {
+		if sig == syscall.SIGTERM || sig == syscall.SIGINT {
+			server.Shutdown(time.Second*5, func(err error) {
+				log.Info("--- shutdown: %v", err)
+				os.Exit(-1)
+			})
+		}
+	})
 }
