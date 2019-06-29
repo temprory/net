@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/temprory/log"
 	"github.com/temprory/net"
+	"sync"
 	"sync/atomic"
 	"time"
 )
@@ -49,14 +50,14 @@ func main() {
 		}
 	}()
 
-	poolSize := 5
+	poolSize := 16
 	engine := net.NewTcpEngine()
 	engine.Handle(CMD_ECHO, onEcho)
 	engine.Handle(CMD_SVR_CALL, onSvrCall)
 
 	pool, err := net.NewRpcClientPool(addr, engine, nil, poolSize, func(c *net.TcpClient) {
 		//client send cmd msg to server
-		c.SendMsg(net.NewMessage(CMD_ECHO, []byte(fmt.Sprintf("hello_%v", 2))))
+		//c.SendMsg(net.NewMessage(CMD_ECHO, []byte(fmt.Sprintf("hello_%v", 2))))
 
 	})
 	if err != nil {
@@ -64,17 +65,26 @@ func main() {
 		return
 	}
 
-	//client call server method
-	for {
-		req := &HelloRequest{Name: "temprory"}
-		rsp := &HelloReply{}
+	wg := sync.WaitGroup{}
+	for i := 0; i < 1000; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			//client call server method
+			for {
+				req := &HelloRequest{Name: "temprory"}
+				rsp := &HelloReply{}
 
-		err = pool.Call("Hello", req, rsp, time.Second*3)
-		if err != nil {
-			log.Error("Hello failed: %v", err)
-			//return
-		}
-		atomic.AddInt64(&qpsCliCall, 1)
-		time.Sleep(time.Second / 10)
+				err = pool.Call("Hello", req, rsp, time.Second*3)
+				if err != nil {
+					log.Error("Hello failed: %v", err)
+					//return
+				}
+				atomic.AddInt64(&qpsCliCall, 1)
+				// time.Sleep(time.Second / 10)
+			}
+		}()
 	}
+
+	wg.Wait()
 }

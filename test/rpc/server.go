@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 	"github.com/temprory/log"
 	"github.com/temprory/net"
 	"time"
@@ -39,20 +39,20 @@ func onHello(ctx *net.RpcContext) {
 		log.Error("onHello failed: %v", err)
 	}
 
-	if ctx.Client().UserData() == nil {
-		ctx.Client().SetUserData(true)
-		go func() {
-			i := 0
-			for {
-				i++
-				time.Sleep(time.Second / 10)
-				if err := ctx.Client().SendMsg(net.NewMessage(CMD_SVR_CALL, []byte(fmt.Sprintf("hello_%v", i)))); err != nil {
-					log.Info("client exit, stop hello loop")
-					return
-				}
-			}
-		}()
-	}
+	// if ctx.Client().UserData() == nil {
+	// 	ctx.Client().SetUserData(true)
+	// 	go func() {
+	// 		i := 0
+	// 		for {
+	// 			i++
+	// 			time.Sleep(time.Second / 10)
+	// 			if err := ctx.Client().SendMsg(net.NewMessage(CMD_SVR_CALL, []byte(fmt.Sprintf("hello_%v", i)))); err != nil {
+	// 				log.Info("client exit, stop hello loop")
+	// 				return
+	// 			}
+	// 		}
+	// 	}()
+	// }
 }
 
 func main() {
