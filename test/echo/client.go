@@ -20,7 +20,7 @@ func main() {
 	var (
 		addr                   = "127.0.0.1:8888"
 		cipher     net.ICipher = net.NewCipherGzip(-1)
-		autoReconn             = true
+		autoReconn             = false
 		netengine              = net.NewTcpEngine()
 	)
 

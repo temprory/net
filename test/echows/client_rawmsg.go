@@ -27,7 +27,8 @@ func main() {
 
 			cli, err := net.NewWebsocketClient("ws://localhost:8888/ws/echo")
 			if err != nil {
-				log.Panic("websocket.NewServer failed: %v, %v", err, time.Now())
+				log.Debug("NewWebsocketClient failed: %v, %v", err, time.Now())
+				return
 			}
 
 			cli.HandleMessage(onMessage)

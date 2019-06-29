@@ -23,6 +23,7 @@ func onEcho(client *net.TcpClient, msg *net.Message) {
 func main() {
 	cipher := net.NewCipherGzip(-1)
 	server := net.NewTcpServer("echo")
+	server.SetMaxConcurrent(500)
 	server.Handle(CMD_ECHO, onEcho)
 	server.HandleNewCipher(func() net.ICipher {
 		return cipher

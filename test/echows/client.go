@@ -18,7 +18,7 @@ func onEcho(client *net.WSClient, msg *net.Message) {
 func main() {
 	cli, err := net.NewWebsocketClient("ws://localhost:8888/ws/echo")
 	if err != nil {
-		log.Panic("websocket.NewServer failed: %v, %v", err, time.Now())
+		log.Panic("NewWebsocketClient failed: %v, %v", err, time.Now())
 	}
 
 	cli.Handle(CMD_ECHO, onEcho)

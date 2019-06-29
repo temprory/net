@@ -81,18 +81,18 @@ func (s *WSServer) onWebsocketRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	conn, err := s.upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-
 	// 计数减
 	online := atomic.AddInt64(&s.currLoad, 1)
 
 	//过载保护,大于配置的最大连接数则拒绝连接
-	if s.maxLoad > 0 && online >= s.maxLoad {
+	if s.maxLoad > 0 && online > s.maxLoad {
 		atomic.AddInt64(&s.currLoad, -1)
+		http.NotFound(w, r)
+		return
+	}
+
+	conn, err := s.upgrader.Upgrade(w, r, nil)
+	if err != nil {
 		http.NotFound(w, r)
 		return
 	}

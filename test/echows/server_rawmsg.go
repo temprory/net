@@ -24,8 +24,9 @@ func onMessage(client *net.WSClient, msg *net.Message) {
 func main() {
 	server, err := net.NewWebsocketServer("echo", ":8888")
 	if err != nil {
-		log.Panic("websocket.NewServer failed: %v", err)
+		log.Panic("NewWebsocketServer failed: %v", err)
 	}
+	server.SetMaxConcurrent(500)
 	server.HandleWs("/ws/echo")
 	server.HandleMessage(onMessage)
 
