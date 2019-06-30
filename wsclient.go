@@ -120,6 +120,21 @@ func (cli *WSClient) writeloop() {
 	}
 }
 
+func (cli *WSClient) Keepalive(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	msg := PingMsg()
+	for {
+		<-ticker.C
+
+		if !cli.running {
+			return
+		}
+
+		cli.SendMsg(msg)
+	}
+}
+
 func (cli *WSClient) RecvSeq() int64 {
 	return cli.recvSeq
 }
