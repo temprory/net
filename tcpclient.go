@@ -419,7 +419,7 @@ func (client *TcpClient) reader() {
 			break
 		}
 		client.recvSeq++
-		client.parent.OnIMessage(client, imsg)
+		client.parent.OnMessage(client, imsg)
 	}
 }
 

@@ -199,7 +199,7 @@ func NewRpcClient(addr string, engine *TcpEngin, codec ICodec, onConnected func(
 		rpcclient.sessionMap = map[int64]*rpcsession{}
 	})
 
-	engine.HandleOnIMessage(func(c *TcpClient, msg IMessage) {
+	engine.HandleOnMessage(func(c *TcpClient, msg IMessage) {
 		//if engine.running {
 		switch msg.Cmd() {
 		case CmdPing:

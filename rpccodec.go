@@ -59,7 +59,7 @@ package net
 // 	if ok {
 // 		return proto.Marshal(msg)
 // 	}
-// 	return nil, ErrorRpcInvalidPbIMessage
+// 	return nil, ErrorRpcInvalidPbMessage
 // }
 
 // func (c *RpcCodecProtobuf) Unmarshal(data []byte, v interface{}) error {
@@ -67,5 +67,5 @@ package net
 // 	if ok {
 // 		return proto.Unmarshal(data, msg)
 // 	}
-// 	return ErrorRpcInvalidPbIMessage
+// 	return ErrorRpcInvalidPbMessage
 // }

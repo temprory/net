@@ -63,7 +63,7 @@ func (c *CodecProtobuf) Marshal(v interface{}) ([]byte, error) {
 	if ok {
 		return proto.Marshal(msg)
 	}
-	return nil, ErrorRpcInvalidPbIMessage
+	return nil, ErrorRpcInvalidPbMessage
 }
 
 func (c *CodecProtobuf) Unmarshal(data []byte, v interface{}) error {
@@ -71,5 +71,5 @@ func (c *CodecProtobuf) Unmarshal(data []byte, v interface{}) error {
 	if ok {
 		return proto.Unmarshal(data, msg)
 	}
-	return ErrorRpcInvalidPbIMessage
+	return ErrorRpcInvalidPbMessage
 }

@@ -42,7 +42,7 @@ type WSEngine struct {
 	newCipherHandler func() ICipher
 }
 
-func (engine *WSEngine) HandleIMessage(h func(cli *WSClient, msg IMessage)) {
+func (engine *WSEngine) HandleMessage(h func(cli *WSClient, msg IMessage)) {
 	engine.messageHandler = h
 }
 

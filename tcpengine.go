@@ -47,8 +47,8 @@ import (
 // 	//setting message router
 // 	HandleRecv(func(client *TcpClient) IMessage)
 
-// 	OnIMessage(client *TcpClient, msg IMessage)
-// 	HandleOnIMessage(onMsg func(client *TcpClient, msg IMessage))
+// 	OnMessage(client *TcpClient, msg IMessage)
+// 	HandleOnMessage(onMsg func(client *TcpClient, msg IMessage))
 
 // 	//handle message by cmd
 // 	Handle(cmd uint32, handler func(client *TcpClient, msg IMessage))
@@ -335,7 +335,7 @@ func (engine *TcpEngin) HandleSend(sender func(client *TcpClient, data []byte) e
 	engine.sendHandler = sender
 }
 
-func (engine *TcpEngin) OnIMessage(client *TcpClient, msg IMessage) {
+func (engine *TcpEngin) OnMessage(client *TcpClient, msg IMessage) {
 	if !engine.running {
 		switch msg.Cmd() {
 		case CmdPing:
@@ -369,7 +369,7 @@ func (engine *TcpEngin) OnIMessage(client *TcpClient, msg IMessage) {
 	}
 }
 
-func (engine *TcpEngin) HandleOnIMessage(onMsg func(client *TcpClient, msg IMessage)) {
+func (engine *TcpEngin) HandleOnMessage(onMsg func(client *TcpClient, msg IMessage)) {
 	engine.onMsgHandler = onMsg
 }
 
