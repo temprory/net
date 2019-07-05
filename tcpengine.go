@@ -245,7 +245,7 @@ func (engine *TcpEngin) RecvMsg(client *TcpClient) *Message {
 	}{
 		err: nil,
 		msg: &Message{
-			data: make([]byte, _message_head_len),
+			data: make([]byte, DEFAULT_MESSAGE_HEAD_LEN),
 		},
 		readLen:    0,
 		dataLen:    0,
@@ -258,7 +258,7 @@ func (engine *TcpEngin) RecvMsg(client *TcpClient) *Message {
 	}
 
 	pkt.readLen, pkt.err = io.ReadFull(client.Conn, pkt.msg.data)
-	if pkt.err != nil || pkt.readLen < _message_head_len {
+	if pkt.err != nil || pkt.readLen < DEFAULT_MESSAGE_HEAD_LEN {
 		logDebug("%s RecvMsg Read Head Err: %v, readLen: %d.", client.Conn.RemoteAddr().String(), pkt.err, pkt.readLen)
 		goto Exit
 	}
@@ -266,8 +266,8 @@ func (engine *TcpEngin) RecvMsg(client *TcpClient) *Message {
 	pkt.dataLen = int(pkt.msg.BodyLen())
 
 	if pkt.dataLen > 0 {
-		if pkt.dataLen+_message_head_len > engine.sockMaxPackLen {
-			logDebug("%s RecvMsg Read Body Err: Msg Len(%d) > MAXPACK_LEN(%d)", client.Conn.RemoteAddr().String(), pkt.dataLen+_message_head_len, engine.sockMaxPackLen)
+		if pkt.dataLen+DEFAULT_MESSAGE_HEAD_LEN > engine.sockMaxPackLen {
+			logDebug("%s RecvMsg Read Body Err: Msg Len(%d) > MAXPACK_LEN(%d)", client.Conn.RemoteAddr().String(), pkt.dataLen+DEFAULT_MESSAGE_HEAD_LEN, engine.sockMaxPackLen)
 			goto Exit
 		}
 
@@ -277,7 +277,7 @@ func (engine *TcpEngin) RecvMsg(client *TcpClient) *Message {
 		}
 
 		pkt.msg.data = append(pkt.msg.data, make([]byte, pkt.dataLen)...)
-		pkt.readLen, pkt.err = io.ReadFull(client.Conn, pkt.msg.data[_message_head_len:])
+		pkt.readLen, pkt.err = io.ReadFull(client.Conn, pkt.msg.data[DEFAULT_MESSAGE_HEAD_LEN:])
 		if pkt.err != nil {
 			logDebug("%s RecvMsg Read Body Err: %v", client.Conn.RemoteAddr().String(), pkt.err)
 			goto Exit

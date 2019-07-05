@@ -17,16 +17,16 @@ type wsAsyncMessage struct {
 }
 
 const (
-	_message_head_len int = 16
+	DEFAULT_MESSAGE_HEAD_LEN int = 16
 
-	_bodylen_idx_begin int = 0
-	_bodylen_idx_end   int = 4
+	DEFAULT_BODY_LEN_IDX_BEGIN int = 0
+	DEFAULT_BODY_LEN_IDX_END   int = 4
 
-	_cmd_idx_begin int = 4
-	_cmd_idx_end   int = 8
+	DEFAULT_CMD_IDX_BEGIN int = 4
+	DEFAULT_CMD_IDX_END   int = 8
 
-	_ext_idx_begin int = 8
-	_ext_idx_end   int = 16
+	DEFAULT_EXT_IDX_BEGIN int = 8
+	DEFAULT_EXT_IDX_END   int = 16
 
 	CmdFlagMaskGzip = uint32(1) << 31
 	CmdPing         = uint32(0x1 << 24)
@@ -68,35 +68,35 @@ type Message struct {
 }
 
 func (msg *Message) HeadLen() int {
-	return _message_head_len
+	return DEFAULT_MESSAGE_HEAD_LEN
 }
 
 func (msg *Message) BodyLen() int {
-	return int(binary.LittleEndian.Uint32(msg.data[_bodylen_idx_begin:_bodylen_idx_end]))
+	return int(binary.LittleEndian.Uint32(msg.data[DEFAULT_BODY_LEN_IDX_BEGIN:DEFAULT_BODY_LEN_IDX_END]))
 }
 
 func (msg *Message) Cmd() uint32 {
-	return binary.LittleEndian.Uint32(msg.data[_cmd_idx_begin:_cmd_idx_end])
+	return binary.LittleEndian.Uint32(msg.data[DEFAULT_CMD_IDX_BEGIN:DEFAULT_CMD_IDX_END])
 }
 
 func (msg *Message) SetCmd(cmd uint32) {
-	binary.LittleEndian.PutUint32(msg.data[_cmd_idx_begin:_cmd_idx_end], cmd)
+	binary.LittleEndian.PutUint32(msg.data[DEFAULT_CMD_IDX_BEGIN:DEFAULT_CMD_IDX_END], cmd)
 }
 
 func (msg *Message) Ext() uint64 {
-	return binary.LittleEndian.Uint64(msg.data[_ext_idx_begin:_ext_idx_end])
+	return binary.LittleEndian.Uint64(msg.data[DEFAULT_EXT_IDX_BEGIN:DEFAULT_EXT_IDX_END])
 }
 
 func (msg *Message) SetExt(ext uint64) {
-	binary.LittleEndian.PutUint64(msg.data[_ext_idx_begin:_ext_idx_end], ext)
+	binary.LittleEndian.PutUint64(msg.data[DEFAULT_EXT_IDX_BEGIN:DEFAULT_EXT_IDX_END], ext)
 }
 
 func (msg *Message) RpcSeq() int64 {
-	return int64(binary.LittleEndian.Uint64(msg.data[_ext_idx_begin:_ext_idx_end]))
+	return int64(binary.LittleEndian.Uint64(msg.data[DEFAULT_EXT_IDX_BEGIN:DEFAULT_EXT_IDX_END]))
 }
 
 func (msg *Message) SetRpcSeq(seq int64) {
-	binary.LittleEndian.PutUint64(msg.data[_ext_idx_begin:_ext_idx_end], uint64(seq))
+	binary.LittleEndian.PutUint64(msg.data[DEFAULT_EXT_IDX_BEGIN:DEFAULT_EXT_IDX_END], uint64(seq))
 }
 
 func (msg *Message) Data() []byte {
@@ -116,18 +116,18 @@ func (msg *Message) SetRawData(rawData []byte) {
 }
 
 func (msg *Message) Body() []byte {
-	return msg.data[_message_head_len:]
+	return msg.data[DEFAULT_MESSAGE_HEAD_LEN:]
 }
 
 func (msg *Message) SetBody(data []byte) {
-	needLen := _message_head_len + len(data) - len(msg.data)
+	needLen := DEFAULT_MESSAGE_HEAD_LEN + len(data) - len(msg.data)
 	if needLen > 0 {
 		msg.data = append(msg.data, make([]byte, needLen)...)
 	} else if needLen < 0 {
-		msg.data = msg.data[:_message_head_len+len(data)]
+		msg.data = msg.data[:DEFAULT_MESSAGE_HEAD_LEN+len(data)]
 	}
-	copy(msg.data[_message_head_len:], data)
-	binary.LittleEndian.PutUint32(msg.data[_bodylen_idx_begin:_bodylen_idx_end], uint32(len(data)))
+	copy(msg.data[DEFAULT_MESSAGE_HEAD_LEN:], data)
+	binary.LittleEndian.PutUint32(msg.data[DEFAULT_BODY_LEN_IDX_BEGIN:DEFAULT_BODY_LEN_IDX_END], uint32(len(data)))
 }
 
 func (msg *Message) Encrypt(seq int64, key uint32, cipher ICipher) []byte {
@@ -151,12 +151,12 @@ func (msg *Message) Decrypt(seq int64, key uint32, cipher ICipher) ([]byte, erro
 
 func NewMessage(cmd uint32, data []byte) *Message {
 	msg := &Message{
-		data: make([]byte, len(data)+_message_head_len),
+		data: make([]byte, len(data)+DEFAULT_MESSAGE_HEAD_LEN),
 	}
-	binary.LittleEndian.PutUint32(msg.data[_cmd_idx_begin:_cmd_idx_end], cmd)
-	binary.LittleEndian.PutUint32(msg.data[_bodylen_idx_begin:_bodylen_idx_end], uint32(len(data)))
+	binary.LittleEndian.PutUint32(msg.data[DEFAULT_CMD_IDX_BEGIN:DEFAULT_CMD_IDX_END], cmd)
+	binary.LittleEndian.PutUint32(msg.data[DEFAULT_BODY_LEN_IDX_BEGIN:DEFAULT_BODY_LEN_IDX_END], uint32(len(data)))
 	if len(data) > 0 {
-		copy(msg.data[_message_head_len:], data)
+		copy(msg.data[DEFAULT_MESSAGE_HEAD_LEN:], data)
 	}
 	return msg
 }
@@ -169,13 +169,13 @@ func RawMessage(data []byte) *Message {
 
 func NewRpcMessage(cmd uint32, seq int64, data []byte) *Message {
 	msg := &Message{
-		data: make([]byte, len(data)+_message_head_len),
+		data: make([]byte, len(data)+DEFAULT_MESSAGE_HEAD_LEN),
 	}
-	binary.LittleEndian.PutUint32(msg.data[_cmd_idx_begin:_cmd_idx_end], cmd)
-	binary.LittleEndian.PutUint64(msg.data[_ext_idx_begin:_ext_idx_end], uint64(seq))
-	binary.LittleEndian.PutUint32(msg.data[_bodylen_idx_begin:_bodylen_idx_end], uint32(len(data)))
+	binary.LittleEndian.PutUint32(msg.data[DEFAULT_CMD_IDX_BEGIN:DEFAULT_CMD_IDX_END], cmd)
+	binary.LittleEndian.PutUint64(msg.data[DEFAULT_EXT_IDX_BEGIN:DEFAULT_EXT_IDX_END], uint64(seq))
+	binary.LittleEndian.PutUint32(msg.data[DEFAULT_BODY_LEN_IDX_BEGIN:DEFAULT_BODY_LEN_IDX_END], uint32(len(data)))
 	if len(data) > 0 {
-		copy(msg.data[_message_head_len:], data)
+		copy(msg.data[DEFAULT_MESSAGE_HEAD_LEN:], data)
 	}
 	return msg
 }
