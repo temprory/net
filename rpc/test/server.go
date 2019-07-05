@@ -7,13 +7,13 @@ import (
 )
 
 type HelloReq struct {
-	Message string
-	Time    time.Time
+	IMessage string
+	Time     time.Time
 }
 
 type HelloRsp struct {
-	Message string
-	Time    time.Time
+	IMessage string
+	Time     time.Time
 }
 
 func echo(ctx *rpc.Context) {
@@ -25,12 +25,12 @@ func echo(ctx *rpc.Context) {
 		ctx.Error("invalid data")
 		return
 	}
-	rsp.Message = req.Message
+	rsp.IMessage = req.IMessage
 
 	rsp.Time = time.Now()
 	ctx.Write(&rsp)
 
-	fmt.Println("server echo:", req.Message, req.Time.UnixNano(), rsp.Time.UnixNano())
+	fmt.Println("server echo:", req.IMessage, req.Time.UnixNano(), rsp.Time.UnixNano())
 }
 
 func empty(ctx *rpc.Context) {

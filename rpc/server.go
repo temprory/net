@@ -41,7 +41,7 @@ func (s *Server) ListenAndServe(addr string) error {
 				},
 			}
 		},
-		Handler: s.onMessage,
+		Handler: s.onIMessage,
 		Logger:  s,
 	}
 
@@ -82,7 +82,7 @@ func (s *Server) Handle(method string, handler func(*Context)) {
 	s.routes[method] = handler
 }
 
-func (s *Server) onMessage(ctxv fastrpc.HandlerCtx) fastrpc.HandlerCtx {
+func (s *Server) onIMessage(ctxv fastrpc.HandlerCtx) fastrpc.HandlerCtx {
 	safe(func() {
 		ctx := ctxv.(*tlv.RequestCtx)
 		data := ctx.Request.Value()

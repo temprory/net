@@ -30,12 +30,12 @@ import (
 )
 
 type HelloReq struct {
-	Message string
+	IMessage string
 	Time    time.Time
 }
 
 type HelloRsp struct {
-	Message string
+	IMessage string
 	Time    time.Time
 }
 
@@ -48,13 +48,13 @@ func echo(ctx *rpc.Context) {
 		ctx.Error("invalid data")
 		return
 	}
-	rsp.Message = req.Message
+	rsp.IMessage = req.IMessage
 
 	time.Sleep(10)
 	rsp.Time = time.Now()
 	ctx.Write(&rsp)
 
-	fmt.Println("server echo:", req.Message, req.Time.UnixNano(), rsp.Time.UnixNano())
+	fmt.Println("server echo:", req.IMessage, req.Time.UnixNano(), rsp.Time.UnixNano())
 }
 
 func main() {
@@ -77,12 +77,12 @@ import (
 )
 
 type HelloReq struct {
-	Message string
+	IMessage string
 	Time    time.Time
 }
 
 type HelloRsp struct {
-	Message string
+	IMessage string
 	Time    time.Time
 }
 
@@ -90,14 +90,14 @@ func main() {
 	client := rpc.NewClient("127.0.0.1:8888")
 
 	for i := 0; i < 10; i++ {
-		var req = HelloReq{Message: fmt.Sprintf("hello %v", i), Time: time.Now()}
+		var req = HelloReq{IMessage: fmt.Sprintf("hello %v", i), Time: time.Now()}
 		var rsp HelloRsp
 		err := client.Call("echo", &req, &rsp, time.Second)
 		if err != nil {
 			fmt.Println("call failed:", err)
 			continue
 		}
-		fmt.Println("client echo:", req.Message, req.Time.UnixNano(), rsp.Time.UnixNano())
+		fmt.Println("client echo:", req.IMessage, req.Time.UnixNano(), rsp.Time.UnixNano())
 	}
 }
 

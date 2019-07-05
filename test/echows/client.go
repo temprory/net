@@ -10,7 +10,7 @@ const (
 	CMD_ECHO = uint32(1)
 )
 
-func onEcho(client *net.WSClient, msg *net.Message) {
+func onEcho(client *net.WSClient, msg net.IMessage) {
 	//cli.SendMsg(cmd, data)
 	log.Info("onEcho, cmd: %v, data: %v", msg.Cmd(), string(msg.Body()))
 }

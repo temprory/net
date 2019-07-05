@@ -43,16 +43,16 @@ import (
 // 	HandleSend(func(client *TcpClient, data []byte) error)
 
 // 	//message router
-// 	RecvMsg(client *TcpClient) *Message
+// 	RecvMsg(client *TcpClient) IMessage
 // 	//setting message router
-// 	HandleRecv(func(client *TcpClient) *Message)
+// 	HandleRecv(func(client *TcpClient) IMessage)
 
-// 	OnMessage(client *TcpClient, msg *Message)
-// 	HandleOnMessage(onMsg func(client *TcpClient, msg *Message))
+// 	OnIMessage(client *TcpClient, msg IMessage)
+// 	HandleOnIMessage(onMsg func(client *TcpClient, msg IMessage))
 
 // 	//handle message by cmd
-// 	Handle(cmd uint32, handler func(client *TcpClient, msg *Message))
-// 	//HandleRpcCmd(cmd uint32, handler func(client *TcpClient, msg *Message))
+// 	Handle(cmd uint32, handler func(client *TcpClient, msg IMessage))
+// 	//HandleRpcCmd(cmd uint32, handler func(client *TcpClient, msg IMessage))
 // 	HandleRpcCmd(cmd uint32, h func(ctx *RpcContext), async bool)
 // 	HandleRpcMethod(method string, h func(ctx *RpcContext), async bool)
 
@@ -86,7 +86,7 @@ import (
 // 	SockSendBlockTime() time.Duration
 // 	SetSockSendBlockTime(sendBlockTime time.Duration)
 
-// 	BroadCast(msg *Message)
+// 	BroadCast(msg IMessage)
 // }
 
 type TcpEngin struct {
@@ -94,7 +94,7 @@ type TcpEngin struct {
 	sync.WaitGroup
 
 	clients             map[*TcpClient]struct{}
-	handlerMap          map[uint32]func(*TcpClient, *Message)
+	handlerMap          map[uint32]func(*TcpClient, IMessage)
 	rpcMethodHandlerMap map[string]func(*RpcContext)
 
 	running           bool
@@ -116,9 +116,9 @@ type TcpEngin struct {
 	newCipherHandler      func() ICipher
 	onDisconnectedHandler func(client *TcpClient)
 	sendQueueFullHandler  func(*TcpClient, interface{})
-	recvHandler           func(client *TcpClient) *Message
+	recvHandler           func(client *TcpClient) IMessage
 	sendHandler           func(client *TcpClient, data []byte) error
-	onMsgHandler          func(client *TcpClient, msg *Message)
+	onMsgHandler          func(client *TcpClient, msg IMessage)
 }
 
 func (engine *TcpEngin) OnNewConn(conn *net.TCPConn) error {
@@ -229,7 +229,7 @@ func (engine *TcpEngin) HandleDisconnected(onDisconnected func(client *TcpClient
 }
 
 //message router
-func (engine *TcpEngin) RecvMsg(client *TcpClient) *Message {
+func (engine *TcpEngin) RecvMsg(client *TcpClient) IMessage {
 	// defer handlePanic()
 
 	if engine.recvHandler != nil {
@@ -298,7 +298,7 @@ Exit:
 }
 
 //setting message router
-func (engine *TcpEngin) HandleRecv(recver func(client *TcpClient) *Message) {
+func (engine *TcpEngin) HandleRecv(recver func(client *TcpClient) IMessage) {
 	engine.recvHandler = recver
 }
 
@@ -335,7 +335,7 @@ func (engine *TcpEngin) HandleSend(sender func(client *TcpClient, data []byte) e
 	engine.sendHandler = sender
 }
 
-func (engine *TcpEngin) OnMessage(client *TcpClient, msg *Message) {
+func (engine *TcpEngin) OnIMessage(client *TcpClient, msg IMessage) {
 	if !engine.running {
 		switch msg.Cmd() {
 		case CmdPing:
@@ -369,12 +369,12 @@ func (engine *TcpEngin) OnMessage(client *TcpClient, msg *Message) {
 	}
 }
 
-func (engine *TcpEngin) HandleOnMessage(onMsg func(client *TcpClient, msg *Message)) {
+func (engine *TcpEngin) HandleOnIMessage(onMsg func(client *TcpClient, msg IMessage)) {
 	engine.onMsgHandler = onMsg
 }
 
 //handle message by cmd
-func (engine *TcpEngin) Handle(cmd uint32, handler func(client *TcpClient, msg *Message)) {
+func (engine *TcpEngin) Handle(cmd uint32, handler func(client *TcpClient, msg IMessage)) {
 	if cmd == CmdPing {
 		panic(ErrorReservedCmdPing)
 	}
@@ -417,19 +417,20 @@ func (engine *TcpEngin) HandleRpcCmd(cmd uint32, handler func(ctx *RpcContext), 
 		panic(fmt.Errorf("HandleRpcCmd failed: handler for cmd %v exists", cmd))
 	}
 	if async {
-		engine.handlerMap[cmd] = func(client *TcpClient, msg *Message) {
+		engine.handlerMap[cmd] = func(client *TcpClient, msg IMessage) {
 			safeGo(func() {
 				handler(&RpcContext{client: client, message: msg})
 			})
 		}
 	} else {
-		engine.handlerMap[cmd] = func(client *TcpClient, msg *Message) {
+		engine.handlerMap[cmd] = func(client *TcpClient, msg IMessage) {
 			handler(&RpcContext{client: client, message: msg})
 		}
 	}
 }
 
-func (engine *TcpEngin) onRpcMethod(client *TcpClient, msg *Message) {
+func (engine *TcpEngin) onRpcMethod(client *TcpClient, imsg IMessage) {
+	msg := imsg.(*Message)
 	data := msg.Body()
 	if len(data) < 2 {
 		client.SendMsg(NewRpcMessage(CmdRpcError, msg.RpcSeq(), []byte("invalid rpc payload")))
@@ -446,7 +447,7 @@ func (engine *TcpEngin) onRpcMethod(client *TcpClient, msg *Message) {
 		client.SendMsg(NewRpcMessage(CmdRpcError, msg.RpcSeq(), []byte(fmt.Sprintf("invalid rpc method %s", method))))
 		return
 	}
-	// rawmsg := msg.(*Message)
+	// rawmsg := msg.(IMessage)
 	msg.data = msg.data[:(len(msg.data) - 1 - methodLen)]
 	handler(&RpcContext{method: method, client: client, message: msg})
 }
@@ -474,7 +475,7 @@ func (engine *TcpEngin) HandleRpcMethod(method string, handler func(ctx *RpcCont
 	}
 }
 
-// func (engine *TcpEngin) HandleRpc(cmd uint32, handler func(client *TcpClient, msg *Message)) {
+// func (engine *TcpEngin) HandleRpc(cmd uint32, handler func(client *TcpClient, msg IMessage)) {
 // 	engine.Handle(cmd, handler)
 // }
 
@@ -558,7 +559,7 @@ func (engine *TcpEngin) SetSockLingerSeconds(sec int) {
 	engine.sockLingerSeconds = sec
 }
 
-func (engine *TcpEngin) BroadCast(msg *Message) {
+func (engine *TcpEngin) BroadCast(msg IMessage) {
 	engine.Lock()
 	defer engine.Unlock()
 	for c, _ := range engine.clients {
@@ -569,7 +570,7 @@ func (engine *TcpEngin) BroadCast(msg *Message) {
 func NewTcpEngine() *TcpEngin {
 	engine := &TcpEngin{
 		clients:           map[*TcpClient]struct{}{},
-		handlerMap:        map[uint32]func(*TcpClient, *Message){},
+		handlerMap:        map[uint32]func(*TcpClient, IMessage){},
 		running:           true,
 		Codec:             DefaultCodec,
 		sockNoDelay:       DefaultSockNodelay,

@@ -32,21 +32,21 @@ type WSEngine struct {
 	cipher ICipher
 
 	// 消息处理方法
-	handlers map[uint32]func(cli *WSClient, msg *Message)
+	handlers map[uint32]func(cli *WSClient, msg IMessage)
 
 	//自定义消息处理
-	messageHandler func(cli *WSClient, msg *Message)
+	messageHandler func(cli *WSClient, msg IMessage)
 
 	sendQueueFullHandler func(cli *WSClient, msg interface{})
 
 	newCipherHandler func() ICipher
 }
 
-func (engine *WSEngine) HandleMessage(h func(cli *WSClient, msg *Message)) {
+func (engine *WSEngine) HandleIMessage(h func(cli *WSClient, msg IMessage)) {
 	engine.messageHandler = h
 }
 
-func (engine *WSEngine) Handle(cmd uint32, h func(cli *WSClient, msg *Message)) {
+func (engine *WSEngine) Handle(cmd uint32, h func(cli *WSClient, msg IMessage)) {
 	if _, ok := engine.handlers[cmd]; ok {
 		log.Panic("Websocket Handle failed, cmd %v already exist", cmd)
 	}
@@ -75,7 +75,7 @@ func (engine *WSEngine) HandleNewCipher(newCipher func() ICipher) {
 }
 
 // 消息处理
-func (engine *WSEngine) onMessage(cli *WSClient, msg *Message) {
+func (engine *WSEngine) onIMessage(cli *WSClient, msg IMessage) {
 	if engine.shutdown {
 		return
 	}
@@ -103,7 +103,7 @@ func NewWebsocketEngine() *WSEngine {
 		ReadLimit:    DefaultReadLimit,
 		SendQSize:    DefaultSendQSize,
 		shutdown:     false,
-		handlers:     map[uint32]func(cli *WSClient, msg *Message){},
+		handlers:     map[uint32]func(cli *WSClient, msg IMessage){},
 	}
 
 	cipher := NewCipherGzip(DefaultThreshold)

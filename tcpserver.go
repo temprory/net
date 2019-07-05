@@ -27,8 +27,8 @@ import (
 // 	AcceptedNum() int64
 // 	HandleServerStop(stopHandler func(server ITcpServer))
 // 	EnableBroadcast()
-// 	Broadcast(msg *Message)
-// 	BroadcastWithFilter(msg *Message, filter func(*TcpClient) bool)
+// 	Broadcast(msg IMessage)
+// 	BroadcastWithFilter(msg IMessage, filter func(*TcpClient) bool)
 // }
 
 type TcpServer struct {
@@ -251,7 +251,7 @@ func (server *TcpServer) EnableBroadcast() {
 	server.enableBroad = true
 }
 
-func (server *TcpServer) Broadcast(msg *Message) {
+func (server *TcpServer) Broadcast(msg IMessage) {
 	if !server.enableBroad {
 		panic(ErrorBroadcastNotEnabled)
 	}
@@ -262,7 +262,7 @@ func (server *TcpServer) Broadcast(msg *Message) {
 	server.Unlock()
 }
 
-func (server *TcpServer) BroadcastWithFilter(msg *Message, filter func(*TcpClient) bool) {
+func (server *TcpServer) BroadcastWithFilter(msg IMessage, filter func(*TcpClient) bool) {
 	if !server.enableBroad {
 		panic(ErrorBroadcastNotEnabled)
 	}
@@ -279,8 +279,8 @@ func NewTcpServer(tag string) *TcpServer {
 	server := &TcpServer{
 		TcpEngin: &TcpEngin{
 			clients: map[*TcpClient]struct{}{},
-			handlerMap: map[uint32]func(*TcpClient, *Message){
-				CmdSetReaIp: func(client *TcpClient, msg *Message) {
+			handlerMap: map[uint32]func(*TcpClient, IMessage){
+				CmdSetReaIp: func(client *TcpClient, msg IMessage) {
 					ip := msg.Body()
 					if len(ip) == 4 {
 						client.SetRealIp(fmt.Sprintf("%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]))

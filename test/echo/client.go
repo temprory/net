@@ -68,7 +68,7 @@ func NewCipherGzip(threshold int) net.ICipher {
 	return &CipherGzipAes{threshold}
 }
 
-func onEcho(client *net.TcpClient, msg *net.Message) {
+func onEcho(client *net.TcpClient, msg net.IMessage) {
 	log.Debug("client onEcho recv from %v: %v", client.Conn.RemoteAddr().String(), string(msg.Body()))
 }
 

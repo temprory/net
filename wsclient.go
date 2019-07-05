@@ -59,7 +59,7 @@ func (cli *WSClient) readloop() {
 
 	var err error
 	var data []byte
-	var msg *Message
+	var msg IMessage
 
 	for cli.running {
 		// 设置读超时, 前端应增有心跳功能
@@ -73,7 +73,7 @@ func (cli *WSClient) readloop() {
 
 		_, data, err = cli.Conn.ReadMessage()
 		if err != nil {
-			log.Debug("Websocket ReadMessage failed: %v", err)
+			log.Debug("Websocket ReadIMessage failed: %v", err)
 			break
 		}
 
@@ -89,7 +89,7 @@ func (cli *WSClient) readloop() {
 		cli.recvSeq++
 
 		// 用户自定义消息处理
-		cli.onMessage(cli, msg)
+		cli.onIMessage(cli, msg)
 	}
 }
 
@@ -203,7 +203,7 @@ func (cli *WSClient) Bind(data []byte, v interface{}) error {
 	return cli.Codec.Unmarshal(data, v)
 }
 
-func (cli *WSClient) SendMsg(msg *Message) error {
+func (cli *WSClient) SendMsg(msg IMessage) error {
 	var err error = nil
 	cli.Lock()
 	if cli.running {
@@ -226,7 +226,7 @@ func (cli *WSClient) SendMsg(msg *Message) error {
 	return err
 }
 
-func (cli *WSClient) SendMsgWithCallback(msg *Message, cb func(*WSClient, error)) error {
+func (cli *WSClient) SendMsgWithCallback(msg IMessage, cb func(*WSClient, error)) error {
 	var err error = nil
 	cli.Lock()
 	if cli.running {

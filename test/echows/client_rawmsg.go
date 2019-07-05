@@ -11,9 +11,9 @@ const (
 	CMD_ECHO = uint32(1)
 )
 
-func onMessage(client *net.WSClient, msg *net.Message) {
+func onIMessage(client *net.WSClient, msg net.IMessage) {
 	//cli.SendMsg(cmd, data)
-	log.Info("onMessage, data: %v", string(msg.Data()))
+	log.Info("onIMessage, data: %v", string(msg.Data()))
 }
 
 func main() {
@@ -31,7 +31,7 @@ func main() {
 				return
 			}
 
-			cli.HandleMessage(onMessage)
+			cli.HandleIMessage(onIMessage)
 			s := "hello ws"
 			// for i := 0; i < 2048; i++ {
 			// 	s += "a"

@@ -16,14 +16,14 @@ import (
 // 	Call(method string, req interface{}, rsp interface{}, timeout time.Duration) error
 // }
 
-type RpcMessage struct {
-	msg *Message
+type RpcIMessage struct {
+	msg IMessage
 	err error
 }
 
 type rpcsession struct {
 	seq  int64
-	done chan *RpcMessage
+	done chan *RpcIMessage
 }
 
 type RpcClient struct {
@@ -47,7 +47,7 @@ func (client *RpcClient) callCmd(cmd uint32, data []byte) ([]byte, error) {
 	if client.running {
 		session = &rpcsession{
 			seq:  atomic.AddInt64(&client.sendSeq, 1),
-			done: make(chan *RpcMessage, 1),
+			done: make(chan *RpcIMessage, 1),
 		}
 		msg := NewRpcMessage(cmd, session.seq, data)
 		client.chSend <- asyncMessage{msg.data, nil}
@@ -71,7 +71,7 @@ func (client *RpcClient) callCmdWithTimeout(cmd uint32, data []byte, timeout tim
 	if client.running {
 		session = &rpcsession{
 			seq:  atomic.AddInt64(&client.sendSeq, 1),
-			done: make(chan *RpcMessage, 1),
+			done: make(chan *RpcIMessage, 1),
 		}
 		msg := NewRpcMessage(cmd, session.seq, data)
 		select {
@@ -199,7 +199,7 @@ func NewRpcClient(addr string, engine *TcpEngin, codec ICodec, onConnected func(
 		rpcclient.sessionMap = map[int64]*rpcsession{}
 	})
 
-	engine.HandleOnMessage(func(c *TcpClient, msg *Message) {
+	engine.HandleOnIMessage(func(c *TcpClient, msg IMessage) {
 		//if engine.running {
 		switch msg.Cmd() {
 		case CmdPing:
@@ -208,7 +208,7 @@ func NewRpcClient(addr string, engine *TcpEngin, codec ICodec, onConnected func(
 			session, ok := rpcclient.sessionMap[msg.RpcSeq()]
 			rpcclient.Unlock()
 			if ok {
-				session.done <- &RpcMessage{msg, nil}
+				session.done <- &RpcIMessage{msg, nil}
 			} else {
 				logDebug("no rpcsession waiting for rpc response, cmd %v, ip: %v", msg.Cmd(), c.Ip())
 			}
@@ -217,7 +217,7 @@ func NewRpcClient(addr string, engine *TcpEngin, codec ICodec, onConnected func(
 			session, ok := rpcclient.sessionMap[msg.RpcSeq()]
 			rpcclient.Unlock()
 			if ok {
-				session.done <- &RpcMessage{msg, errors.New(string(msg.Body()))}
+				session.done <- &RpcIMessage{msg, errors.New(string(msg.Body()))}
 			} else {
 				logDebug("no rpcsession waiting for rpc response, cmd %v, ip: %v", msg.Cmd(), c.Ip())
 			}

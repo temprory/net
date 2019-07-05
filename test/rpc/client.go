@@ -25,17 +25,17 @@ type HelloRequest struct {
 }
 
 type HelloReply struct {
-	Message string
+	IMessage string
 }
 
-func onEcho(client *net.TcpClient, msg *net.Message) {
+func onEcho(client *net.TcpClient, msg net.IMessage) {
 	//log.Info("onEcho: %v", string(msg.Body()))
 	atomic.AddInt64(&qpsEcho, 1)
 	time.Sleep(time.Second / 10)
 	client.SendMsg(msg)
 }
 
-func onSvrCall(client *net.TcpClient, msg *net.Message) {
+func onSvrCall(client *net.TcpClient, msg net.IMessage) {
 	//log.Info("onSvrCall: %v", string(msg.Body()))
 	atomic.AddInt64(&qpsSvrCall, 1)
 }

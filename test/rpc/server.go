@@ -19,10 +19,10 @@ type HelloRequest struct {
 }
 
 type HelloReply struct {
-	Message string
+	IMessage string
 }
 
-func onEcho(client *net.TcpClient, msg *net.Message) {
+func onEcho(client *net.TcpClient, msg net.IMessage) {
 	//log.Info("onEcho: %v, %v", msg.Cmd(), string(msg.Body()))
 	client.SendMsg(msg)
 }
@@ -34,7 +34,7 @@ func onHello(ctx *net.RpcContext) {
 		log.Error("onHello failed: %v", err)
 		return
 	}
-	err = ctx.Write(&HelloReply{Message: req.Name})
+	err = ctx.Write(&HelloReply{IMessage: req.Name})
 	if err != nil {
 		log.Error("onHello failed: %v", err)
 	}

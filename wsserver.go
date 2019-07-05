@@ -152,8 +152,8 @@ func (s *WSServer) onWebsocketRequest(w http.ResponseWriter, r *http.Request) {
 // }
 
 // 默认消息处理
-// func (s *WSServer) onMessage(cli *WSClient, data []byte) {
-// 	s.onMessage(cli, data)
+// func (s *WSServer) onIMessage(cli *WSClient, data []byte) {
+// 	s.onIMessage(cli, data)
 // }
 
 func (server *WSServer) CurrLoad() int64 {
@@ -256,7 +256,7 @@ func NewWebsocketServer(name string, addr string) (*WSServer, error) {
 		routes:   map[string]func(http.ResponseWriter, *http.Request){},
 	}
 
-	// svr.WSEngine.MessageHandler = svr.onMessage
+	// svr.WSEngine.IMessageHandler = svr.onIMessage
 
 	svr.HttpServer, err = graceful.NewHttpServer(addr, svr, time.Second*5, nil, func() {
 		os.Exit(-1)

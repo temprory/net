@@ -65,7 +65,7 @@ func NewRpcClientPool(addr string, engine *TcpEngin, codec ICodec, poolSize int,
 	}
 
 	clients := map[*TcpClient]*RpcClient{}
-	engine.HandleOnMessage(func(c *TcpClient, msg *Message) {
+	engine.HandleOnIMessage(func(c *TcpClient, msg IMessage) {
 		//if engine.running {
 		switch msg.Cmd() {
 		case CmdPing:
@@ -75,7 +75,7 @@ func NewRpcClientPool(addr string, engine *TcpEngin, codec ICodec, poolSize int,
 			session, ok := rpcclient.sessionMap[msg.RpcSeq()]
 			rpcclient.Unlock()
 			if ok {
-				session.done <- &RpcMessage{msg, nil}
+				session.done <- &RpcIMessage{msg, nil}
 			} else {
 				logDebug("no rpcsession waiting for rpc response, cmd %X, ip: %v", msg.Cmd(), c.Ip())
 			}
@@ -85,7 +85,7 @@ func NewRpcClientPool(addr string, engine *TcpEngin, codec ICodec, poolSize int,
 			session, ok := rpcclient.sessionMap[msg.RpcSeq()]
 			rpcclient.Unlock()
 			if ok {
-				session.done <- &RpcMessage{msg, errors.New(string(msg.Body()))}
+				session.done <- &RpcIMessage{msg, errors.New(string(msg.Body()))}
 			} else {
 				logDebug("no rpcsession waiting for rpc response, cmd %X, ip: %v", msg.Cmd(), c.Ip())
 			}

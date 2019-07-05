@@ -10,7 +10,7 @@ func TestCipherGzip(t *testing.T) {
 	for i := 0; i < 256; i++ {
 		str += "abcdefghij"
 	}
-	msg := NewMessage(1, []byte(str))
+	msg := NewIMessage(1, []byte(str))
 	data := cipher.Encrypt(0, 0, msg.data)
 	data2, err := cipher.Decrypt(0, 0, data)
 	if err != nil {

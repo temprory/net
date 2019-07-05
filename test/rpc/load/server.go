@@ -14,7 +14,7 @@ type HelloRequest struct {
 }
 
 type HelloReply struct {
-	Message string
+	IMessage string
 }
 
 func onJsonRpc(ctx *net.RpcContext) {
@@ -26,13 +26,13 @@ func onJsonRpc(ctx *net.RpcContext) {
 		return
 	}
 
-	err = ctx.WriteJson(&HelloReply{Message: req.Name})
+	err = ctx.WriteJson(&HelloReply{IMessage: req.Name})
 	if err != nil {
 		log.Error("onJsonRpc failed: %v", err)
 	}
 }
 
-var client net.*TcpClient
+var client *net.TcpClient
 
 func main() {
 	go func() {

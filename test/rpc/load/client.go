@@ -29,7 +29,7 @@ type HelloRequest struct {
 
 // The response message containing the greetings
 type HelloReply struct {
-	Message string
+	IMessage string
 }
 
 func oneClient() {
@@ -48,7 +48,7 @@ func oneClient() {
 			log.Debug("default codec msgpack method failed: %v", err)
 			continue
 		}
-		if rsp.Message != req.Name {
+		if rsp.IMessage != req.Name {
 			log.Debug("default codec msgpack method failed: %v", err)
 		}
 		atomic.AddInt64(&qps, 1)

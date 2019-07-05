@@ -15,7 +15,7 @@ var (
 type RpcContext struct {
 	method  string
 	client  *TcpClient
-	message *Message
+	message IMessage
 }
 
 func (ctx *RpcContext) Client() *TcpClient {
@@ -39,7 +39,7 @@ func (ctx *RpcContext) WriteData(data []byte) error {
 	return ctx.client.pushDataSync(NewRpcMessage(ctx.message.Cmd(), ctx.message.RpcSeq(), data).data)
 }
 
-func (ctx *RpcContext) WriteMsg(msg *Message) error {
+func (ctx *RpcContext) WriteMsg(msg IMessage) error {
 	if ctx.message != msg {
 		msg.SetRpcSeq(ctx.message.RpcSeq())
 	}

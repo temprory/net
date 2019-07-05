@@ -55,17 +55,17 @@ package net
 // type RpcCodecProtobuf struct{}
 
 // func (c *RpcCodecProtobuf) Marshal(v interface{}) ([]byte, error) {
-// 	msg, ok := v.(proto.Message)
+// 	msg, ok := v.(proto.IMessage)
 // 	if ok {
 // 		return proto.Marshal(msg)
 // 	}
-// 	return nil, ErrorRpcInvalidPbMessage
+// 	return nil, ErrorRpcInvalidPbIMessage
 // }
 
 // func (c *RpcCodecProtobuf) Unmarshal(data []byte, v interface{}) error {
-// 	msg, ok := v.(proto.Message)
+// 	msg, ok := v.(proto.IMessage)
 // 	if ok {
 // 		return proto.Unmarshal(data, msg)
 // 	}
-// 	return ErrorRpcInvalidPbMessage
+// 	return ErrorRpcInvalidPbIMessage
 // }

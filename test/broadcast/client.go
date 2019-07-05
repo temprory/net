@@ -9,7 +9,7 @@ const (
 	CMD_BROAD = uint32(1)
 )
 
-func onBroadcast(client *net.TcpClient, msg *net.Message) {
+func onBroadcast(client *net.TcpClient, msg net.IMessage) {
 	str := "aaaaaaaaaa"
 	for j := 0; j < 256; j++ {
 		str += "aaaaaaaaaa"
