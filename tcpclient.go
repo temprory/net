@@ -440,7 +440,7 @@ func createTcpClient(conn *net.TCPConn, parent *TcpEngin, cipher ICipher) *TcpCl
 	conn.SetReadBuffer(parent.SockRecvBufLen())
 	conn.SetWriteBuffer(parent.SockSendBufLen())
 
-	return &TcpClient{
+	client := &TcpClient{
 		Conn:       conn,
 		parent:     parent,
 		cipher:     cipher,
@@ -448,6 +448,13 @@ func createTcpClient(conn *net.TCPConn, parent *TcpEngin, cipher ICipher) *TcpCl
 		onCloseMap: map[interface{}]func(*TcpClient){},
 		running:    true,
 	}
+
+	addr := conn.RemoteAddr().String()
+	if pos := strings.LastIndex(addr, ":"); pos > 0 {
+		client.realIp = addr[:pos]
+	}
+
+	return client
 }
 
 func NewTcpClient(addr string, parent *TcpEngin, cipher ICipher, autoReconn bool, onConnected func(*TcpClient)) (*TcpClient, error) {

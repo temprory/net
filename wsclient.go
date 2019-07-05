@@ -336,7 +336,7 @@ func newClient(conn *websocket.Conn, engine *WSEngine) *WSClient {
 	}
 
 	cipher := engine.NewCipher()
-	return &WSClient{
+	cli := &WSClient{
 		WSEngine:   engine,
 		Conn:       conn,
 		chSend:     make(chan wsAsyncMessage, sendQSize),
@@ -344,6 +344,13 @@ func newClient(conn *websocket.Conn, engine *WSEngine) *WSClient {
 		cipher:     cipher,
 		onCloseMap: map[interface{}]func(*WSClient){},
 	}
+
+	addr := conn.RemoteAddr().String()
+	if pos := strings.LastIndex(addr, ":"); pos > 0 {
+		cli.realIp = addr[:pos]
+	}
+
+	return cli
 }
 
 func NewWebsocketClient(addr string) (*WSClient, error) {
