@@ -40,6 +40,7 @@ func (cipher *CipherGzipAes) Encrypt(seq int64, key uint32, data []byte) []byte 
 	if cipher.threshold < 0 || (len(data) <= cipher.threshold+net.DEFAULT_MESSAGE_HEAD_LEN) {
 		return data
 	}
+	log.Debug("--- Encrypt")
 	body := util.GZipCompress(data[16:])
 	body, _ = crypto.AesCBCEncrypt(aeskey, aesiv, body)
 	newData := append(make([]byte, net.DEFAULT_MESSAGE_HEAD_LEN), body...)
@@ -56,6 +57,7 @@ func (cipher *CipherGzipAes) Decrypt(seq int64, key uint32, data []byte) ([]byte
 	if cmd&net.CmdFlagMaskGzip != net.CmdFlagMaskGzip {
 		return data, nil
 	}
+	log.Debug("--- Decrypt")
 	binary.LittleEndian.PutUint32(data[net.DEFAULT_CMD_IDX_BEGIN:net.DEFAULT_CMD_IDX_END], cmd&(^net.CmdFlagMaskGzip))
 	body, err := crypto.AesCBCDecrypt(aeskey, aesiv, data[16:])
 	if err != nil {
@@ -77,7 +79,7 @@ func NewCipherGzip(threshold int) net.ICipher {
 }
 
 func main() {
-	cipher := NewCipherGzip(-1)
+	cipher := NewCipherGzip(net.CipherGzipAll)
 	server := net.NewTcpServer("echo")
 	server.SetMaxConcurrent(500)
 	server.Handle(CMD_ECHO, onEcho)
