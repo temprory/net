@@ -2,6 +2,7 @@ package net
 
 import (
 	// "encoding/binary"
+	"github.com/gorilla/websocket"
 	"github.com/temprory/log"
 	"sync"
 	"time"
@@ -37,9 +38,73 @@ type WSEngine struct {
 	//自定义消息处理
 	messageHandler func(cli *WSClient, msg IMessage)
 
+	recvHandler func(cli *WSClient) IMessage
+
+	sendHandler func(cli *WSClient, data []byte) error
+
 	sendQueueFullHandler func(cli *WSClient, msg interface{})
 
 	newCipherHandler func() ICipher
+}
+
+func (engine *WSEngine) RecvMsg(cli *WSClient) IMessage {
+	if engine.recvHandler != nil {
+		return engine.recvHandler(cli)
+	}
+
+	var err error
+	var data []byte
+
+	if cli.ReadTimeout > 0 {
+		err = cli.Conn.SetReadDeadline(time.Now().Add(cli.ReadTimeout))
+		if err != nil {
+			log.Debug("Websocket SetReadDeadline failed: %v", err)
+			return nil
+		}
+	}
+
+	_, data, err = cli.Conn.ReadMessage()
+	if err != nil {
+		log.Debug("Websocket ReadIMessage failed: %v", err)
+		return nil
+	}
+
+	msg := &Message{
+		rawData: data,
+		data:    nil,
+	}
+
+	if _, err = msg.Decrypt(cli.RecvSeq(), cli.RecvKey(), cli.Cipher()); err != nil {
+		logDebug("%s RecvMsg Decrypt Err: %v", cli.Conn.RemoteAddr().String(), err)
+		return nil
+	}
+
+	return msg
+}
+
+func (engine *WSEngine) Send(cli *WSClient, data []byte) error {
+	if engine.sendHandler != nil {
+		return engine.sendHandler(cli, data)
+	}
+
+	var err error
+
+	if cli.WriteTimeout > 0 {
+		err = cli.Conn.SetWriteDeadline(time.Now().Add(engine.WriteTimeout))
+		if err != nil {
+			logDebug("%s Send SetReadDeadline Err: %v", cli.Conn.RemoteAddr().String(), err)
+			cli.Stop()
+			return err
+		}
+	}
+
+	err = cli.Conn.WriteMessage(websocket.BinaryMessage, data)
+	if err != nil {
+		logDebug("%s Send Write Err: %v", cli.Conn.RemoteAddr().String(), err)
+		cli.Stop()
+	}
+
+	return err
 }
 
 func (engine *WSEngine) HandleMessage(h func(cli *WSClient, msg IMessage)) {
@@ -51,6 +116,15 @@ func (engine *WSEngine) Handle(cmd uint32, h func(cli *WSClient, msg IMessage)) 
 		log.Panic("Websocket Handle failed, cmd %v already exist", cmd)
 	}
 	engine.handlers[cmd] = h
+}
+
+//setting message router
+func (engine *WSEngine) HandleRecv(recver func(cli *WSClient) IMessage) {
+	engine.recvHandler = recver
+}
+
+func (engine *WSEngine) HandleSend(sender func(cli *WSClient, data []byte) error) {
+	engine.sendHandler = sender
 }
 
 func (engine *WSEngine) OnSendQueueFull(cli *WSClient, msg interface{}) {
@@ -75,7 +149,7 @@ func (engine *WSEngine) HandleNewCipher(newCipher func() ICipher) {
 }
 
 // 消息处理
-func (engine *WSEngine) onIMessage(cli *WSClient, msg IMessage) {
+func (engine *WSEngine) onMessage(cli *WSClient, msg IMessage) {
 	if engine.shutdown {
 		return
 	}

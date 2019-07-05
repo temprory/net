@@ -13,7 +13,7 @@ import (
 
 	//"compress/flate"
 	"github.com/gorilla/websocket"
-	"github.com/temprory/log"
+	//"github.com/temprory/log"
 	//"github.com/valyala/fasthttp"
 )
 
@@ -54,61 +54,27 @@ type WSClient struct {
 // 	cb   func(*WSClient, error)
 // }
 
-func (cli *WSClient) readloop() {
+func (cli *WSClient) reader() {
 	defer handlePanic()
+	defer cli.Stop()
 
-	var err error
-	var data []byte
-	var msg IMessage
-
-	for cli.running {
-		// 设置读超时, 前端应增有心跳功能
-		if cli.ReadTimeout > 0 {
-			cli.Conn.SetReadDeadline(time.Now().Add(cli.ReadTimeout))
-			if err != nil {
-				log.Debug("Websocket SetReadDeadline failed: %v", err)
-				break
-			}
-		}
-
-		_, data, err = cli.Conn.ReadMessage()
-		if err != nil {
-			log.Debug("Websocket ReadIMessage failed: %v", err)
+	var imsg IMessage
+	for {
+		if imsg = cli.WSEngine.RecvMsg(cli); imsg == nil {
 			break
 		}
-
-		msg = &Message{
-			rawData: data,
-			data:    nil,
-		}
-		if _, err = msg.Decrypt(cli.RecvSeq(), cli.RecvKey(), cli.Cipher()); err != nil {
-			logDebug("%s RecvMsg Decrypt Err: %v", cli.Conn.RemoteAddr().String(), err)
-			break
-		}
-
 		cli.recvSeq++
-
-		// 用户自定义消息处理
-		cli.onIMessage(cli, msg)
+		cli.WSEngine.onMessage(cli, imsg)
 	}
 }
 
-func (cli *WSClient) writeloop() {
+func (cli *WSClient) writer() {
 	defer cli.Stop()
 	defer handlePanic()
 
 	var err error
 	for msg := range cli.chSend {
-		if cli.WriteTimeout > 0 {
-			err = cli.Conn.SetWriteDeadline(time.Now().Add(cli.WSEngine.WriteTimeout))
-			if err != nil {
-				if msg.cb != nil {
-					msg.cb(cli, err)
-				}
-				break
-			}
-		}
-		err = cli.Conn.WriteMessage(websocket.BinaryMessage, msg.data)
+		err = cli.WSEngine.Send(cli, msg.data)
 		if msg.cb != nil {
 			msg.cb(cli, err)
 		}
@@ -367,9 +333,12 @@ func NewWebsocketClient(addr string) (*WSClient, error) {
 
 	cli := newClient(conn, NewWebsocketEngine())
 
-	go cli.readloop()
+	// go cli.readloop()
 
-	go cli.writeloop()
+	// go cli.writeloop()
+
+	safeGo(cli.reader)
+	safeGo(cli.writer)
 
 	return cli, nil
 }
@@ -394,9 +363,8 @@ func NewWebsocketTLSClient(addr string) (*WSClient, error) {
 
 	cli := newClient(conn, NewWebsocketEngine())
 
-	go cli.readloop()
-
-	go cli.writeloop()
+	safeGo(cli.reader)
+	safeGo(cli.writer)
 
 	return cli, nil
 }

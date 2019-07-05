@@ -141,9 +141,9 @@ func (s *WSServer) onWebsocketRequest(w http.ResponseWriter, r *http.Request) {
 		return nil
 	})
 
-	go cli.writeloop()
+	go cli.writer()
 
-	cli.readloop()
+	cli.reader()
 }
 
 // websocket upgrade handler
