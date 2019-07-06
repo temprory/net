@@ -249,7 +249,7 @@ func (client *TcpClient) SendDataWithCallback(data []byte, cb func(*TcpClient, e
 }
 
 func (client *TcpClient) pushDataSync(data []byte) error {
-	defer util.HandlePanic()
+	defer handlePanic()
 	var err error = nil
 	client.Lock()
 	if client.running {
@@ -265,7 +265,7 @@ func (client *TcpClient) pushDataSync(data []byte) error {
 		err = ErrTcpClientIsStopped
 	}
 	if err != nil {
-		log.Debug("pushDataSync -> %v failed: %v", client.Ip(), err)
+		logDebug("pushDataSync -> %v failed: %v", client.Ip(), err)
 	}
 
 	return err
