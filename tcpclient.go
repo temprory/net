@@ -249,17 +249,23 @@ func (client *TcpClient) SendDataWithCallback(data []byte, cb func(*TcpClient, e
 }
 
 func (client *TcpClient) pushDataSync(data []byte) error {
-	defer handlePanic()
+	defer util.HandlePanic()
 	var err error = nil
 	client.Lock()
 	if client.running {
-		client.chSend <- asyncMessage{data, nil}
+		select {
+		case client.chSend <- asyncMessage{data, nil}:
+			client.Unlock()
+		case <-time.After(client.parent.SockSendBlockTime()):
+			client.Unlock()
+			err = ErrRpcCallTimeout
+		}
 	} else {
+		client.Unlock()
 		err = ErrTcpClientIsStopped
 	}
-	client.Unlock()
 	if err != nil {
-		logDebug("pushDataSync -> %v failed: %v", client.Ip(), err)
+		log.Debug("pushDataSync -> %v failed: %v", client.Ip(), err)
 	}
 
 	return err
