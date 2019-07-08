@@ -98,7 +98,7 @@ func (engine *WSEngine) Send(cli *WSClient, data []byte) error {
 		}
 	}
 
-	err = cli.Conn.WriteMessage(websocket.BinaryMessage, data)
+	err = cli.Conn.WriteMessage(websocket.TextMessage, data)
 	if err != nil {
 		logDebug("%s Send Write Err: %v", cli.Conn.RemoteAddr().String(), err)
 		cli.Stop()
