@@ -68,23 +68,27 @@ func (client *RpcClient) callCmd(cmd uint32, data []byte) ([]byte, error) {
 func (client *RpcClient) callCmdWithTimeout(cmd uint32, data []byte, timeout time.Duration) ([]byte, error) {
 	var session *rpcsession
 	client.Lock()
-	if client.running {
-		session = &rpcsession{
-			seq:  atomic.AddInt64(&client.sendSeq, 1),
-			done: make(chan *RpcIMessage, 1),
-		}
-		msg := NewRpcMessage(cmd, session.seq, data)
-		select {
-		case client.chSend <- asyncMessage{msg.data, nil}:
-			client.sessionMap[session.seq] = session
-		case <-time.After(timeout):
-			client.Unlock()
-			return nil, ErrRpcCallTimeout
-		}
-	} else {
+	if !client.running {
 		client.Unlock()
 		return nil, ErrRpcClientIsDisconnected
 	}
+
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	session = &rpcsession{
+		seq:  atomic.AddInt64(&client.sendSeq, 1),
+		done: make(chan *RpcIMessage, 1),
+	}
+	msg := NewRpcMessage(cmd, session.seq, data)
+	select {
+	case client.chSend <- asyncMessage{msg.data, nil}:
+		client.sessionMap[session.seq] = session
+	case <-timer.C:
+		client.Unlock()
+		return nil, ErrRpcCallTimeout
+	}
+
 	client.Unlock()
 	defer client.removeSession(session.seq)
 	select {
@@ -93,7 +97,7 @@ func (client *RpcClient) callCmdWithTimeout(cmd uint32, data []byte, timeout tim
 			return nil, ErrRpcClientIsDisconnected
 		}
 		return msg.msg.Body(), msg.err
-	case <-time.After(timeout):
+	case <-timer.C:
 		return nil, ErrRpcCallTimeout
 	}
 	return nil, ErrRpcCallClientError
